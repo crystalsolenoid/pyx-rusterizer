@@ -1,16 +1,11 @@
 use minifb::{Key, Window, WindowOptions};
 use std::time::Instant;
 
+use pyx_rusterizer::buffer::Buffer;
+
 const WIDTH: usize = 40;
 const HEIGHT: usize = 60;
 const SCALING_FACTOR: usize = 10;
-
-struct Buffer {
-    //vector of paletteIndicies
-    pixels: Vec<u8>,
-    width: usize,
-    height: usize,
-}
 
 // packedRGB values, indexed by paletteIndex
 const PALETTE: [u32; 4] = [
@@ -25,6 +20,8 @@ fn main() {
         pixels: vec![0; WIDTH * HEIGHT],
         width: WIDTH,
         height: HEIGHT,
+        scale: SCALING_FACTOR,
+        palette: PALETTE,
     };
     palette_buffer.pixels = palette_buffer
         .pixels
