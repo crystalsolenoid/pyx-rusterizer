@@ -1,8 +1,9 @@
 use minifb::{Key, Window, WindowOptions};
 use std::time::Instant;
 
-const WIDTH: usize = 640;
-const HEIGHT: usize = 360;
+const WIDTH: usize = 40;
+const HEIGHT: usize = 60;
+const SCALING_FACTOR: usize = 10;
 
 struct Buffer {
     //vector of paletteIndicies
@@ -21,17 +22,23 @@ const PALETTE: [u32; 4] = [
 
 fn main() {
     let mut palette_buffer = Buffer {
-        pixels: vec![1; WIDTH * HEIGHT],
+        pixels: vec![0; WIDTH * HEIGHT],
         width: WIDTH,
         height: HEIGHT,
     };
+    palette_buffer.pixels = palette_buffer
+        .pixels
+        .iter()
+        .enumerate()
+        .map(|(i, &val)| ((i / 11)%4) as u8)
+        .collect();
 
-    let mut rgb_buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
+    let mut rgb_buffer: Vec<u32> = vec![0; SCALING_FACTOR * palette_buffer.width * SCALING_FACTOR * palette_buffer.height];
 
     let mut window = Window::new(
         "Test - ESC to exit",
-        WIDTH,
-        HEIGHT,
+        SCALING_FACTOR * palette_buffer.width,
+        SCALING_FACTOR * palette_buffer.height,
         WindowOptions::default(),
     )
     .unwrap_or_else(|e| {
@@ -46,14 +53,21 @@ fn main() {
     while window.is_open() && !window.is_key_down(Key::Escape) {
         let elapsed_time = now.elapsed();
         if elapsed_time.as_secs() >= 1 {
-            for i in palette_buffer.pixels.iter_mut() {
-                *i = frames % 4;
-            }
+//            for i in palette_buffer.pixels.iter_mut() {
+//                *i = frames % 4;
+//            }
 
-            rgb_buffer = palette_buffer
-                .pixels
+            rgb_buffer = rgb_buffer
                 .iter()
-                .map(|&palette_index| PALETTE[palette_index as usize])
+                .enumerate()
+                .map(|(i, &rgb_index)| {
+                    let x = i % (SCALING_FACTOR * palette_buffer.width);
+                    let y = i / (SCALING_FACTOR * palette_buffer.width);
+                    let shrunk_x = x / SCALING_FACTOR;
+                    let shrunk_y = y / SCALING_FACTOR;
+                    let shrunk_i = shrunk_x + shrunk_y * palette_buffer.width;// / SCALING_FACTOR;
+                    PALETTE[palette_buffer.pixels[shrunk_i as usize] as usize]
+                })
                 .collect();
 
             now = Instant::now();
@@ -62,7 +76,7 @@ fn main() {
 
         // We unwrap here as we want this code to exit if it fails. Real applications may want to handle this in a different way
         window
-            .update_with_buffer(&rgb_buffer, WIDTH, HEIGHT)
+            .update_with_buffer(&rgb_buffer, SCALING_FACTOR * palette_buffer.width, SCALING_FACTOR * palette_buffer.height)
             .unwrap();
     }
 }
