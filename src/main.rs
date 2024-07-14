@@ -51,7 +51,10 @@ fn main() {
     while window.is_open() && !window.is_key_down(Key::Escape) {
         let elapsed_time = now.elapsed();
         if elapsed_time.as_secs() >= 1 {
-            palette_buffer.pix(palette_buffer.width - 1, 1, frames % 4);
+            palette_buffer.h_line(3, 5, 5, frames % 4);
+            palette_buffer.h_line(2, 6, 6, frames % 4);
+            palette_buffer.h_line(2, 7, 7, frames % 4);
+            palette_buffer.h_line(1, 8, 8, frames % 4);
 
             now = Instant::now();
             frames += 1;
