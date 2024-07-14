@@ -18,19 +18,20 @@ const PALETTE: [u32; 4] = [
 fn main() {
     let mut palette_buffer = Buffer {
         pixels: vec![0; WIDTH * HEIGHT],
+        rgb_pixels: vec![0; WIDTH * HEIGHT * SCALING_FACTOR * SCALING_FACTOR],
         width: WIDTH,
         height: HEIGHT,
         scale: SCALING_FACTOR,
         palette: PALETTE,
     };
-    palette_buffer.pixels = palette_buffer
-        .pixels
-        .iter()
-        .enumerate()
-        .map(|(i, &val)| ((i / 11)%4) as u8)
-        .collect();
 
-    let mut rgb_buffer: Vec<u32> = vec![0; SCALING_FACTOR * palette_buffer.width * SCALING_FACTOR * palette_buffer.height];
+    for i in 0..palette_buffer.width * palette_buffer.height {
+        palette_buffer.pix(
+            i % palette_buffer.width,
+            i / palette_buffer.width,
+            ((i / 11) % 4) as u8,
+        );
+    }
 
     let mut window = Window::new(
         "Test - ESC to exit",
@@ -50,22 +51,7 @@ fn main() {
     while window.is_open() && !window.is_key_down(Key::Escape) {
         let elapsed_time = now.elapsed();
         if elapsed_time.as_secs() >= 1 {
-//            for i in palette_buffer.pixels.iter_mut() {
-//                *i = frames % 4;
-//            }
-
-            rgb_buffer = rgb_buffer
-                .iter()
-                .enumerate()
-                .map(|(i, &rgb_index)| {
-                    let x = i % (SCALING_FACTOR * palette_buffer.width);
-                    let y = i / (SCALING_FACTOR * palette_buffer.width);
-                    let shrunk_x = x / SCALING_FACTOR;
-                    let shrunk_y = y / SCALING_FACTOR;
-                    let shrunk_i = shrunk_x + shrunk_y * palette_buffer.width;// / SCALING_FACTOR;
-                    PALETTE[palette_buffer.pixels[shrunk_i as usize] as usize]
-                })
-                .collect();
+            palette_buffer.pix(palette_buffer.width - 1, 1, frames % 4);
 
             now = Instant::now();
             frames += 1;
@@ -73,7 +59,11 @@ fn main() {
 
         // We unwrap here as we want this code to exit if it fails. Real applications may want to handle this in a different way
         window
-            .update_with_buffer(&rgb_buffer, SCALING_FACTOR * palette_buffer.width, SCALING_FACTOR * palette_buffer.height)
+            .update_with_buffer(
+                &palette_buffer.rgb_pixels,
+                SCALING_FACTOR * palette_buffer.width,
+                SCALING_FACTOR * palette_buffer.height,
+            )
             .unwrap();
     }
 }
