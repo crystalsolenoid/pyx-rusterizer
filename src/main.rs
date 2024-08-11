@@ -16,27 +16,20 @@ const PALETTE: [u32; 4] = [
 ];
 
 fn main() {
-    let mut palette_buffer = Buffer {
-        pixels: vec![0; WIDTH * HEIGHT],
-        rgb_pixels: vec![0; WIDTH * HEIGHT * SCALING_FACTOR * SCALING_FACTOR],
-        width: WIDTH,
-        height: HEIGHT,
-        scale: SCALING_FACTOR,
-        palette: PALETTE,
-    };
+    let mut palette_buffer = Buffer::new(WIDTH, HEIGHT, PALETTE, SCALING_FACTOR);
 
-    for i in 0..palette_buffer.width * palette_buffer.height {
+    for i in 0..palette_buffer.width() * palette_buffer.height() {
         palette_buffer.pix(
-            i % palette_buffer.width,
-            i / palette_buffer.width,
+            i % palette_buffer.width(),
+            i / palette_buffer.width(),
             ((i / 11) % 4) as u8,
         );
     }
 
     let mut window = Window::new(
         "Test - ESC to exit",
-        SCALING_FACTOR * palette_buffer.width,
-        SCALING_FACTOR * palette_buffer.height,
+        SCALING_FACTOR * palette_buffer.width(),
+        SCALING_FACTOR * palette_buffer.height(),
         WindowOptions::default(),
     )
     .unwrap_or_else(|e| {
@@ -63,9 +56,9 @@ fn main() {
         // We unwrap here as we want this code to exit if it fails. Real applications may want to handle this in a different way
         window
             .update_with_buffer(
-                &palette_buffer.rgb_pixels,
-                SCALING_FACTOR * palette_buffer.width,
-                SCALING_FACTOR * palette_buffer.height,
+                palette_buffer.rgb_pixels(),
+                SCALING_FACTOR * palette_buffer.width(),
+                SCALING_FACTOR * palette_buffer.height(),
             )
             .unwrap();
     }
