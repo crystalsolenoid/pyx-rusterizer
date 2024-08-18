@@ -17,14 +17,14 @@ const PALETTE: [u32; 4] = [
 
 struct Model {
     triangle_color: u8,
-    triangle_position: (usize, usize),
+    triangle_position: (i32, i32),
 }
 
 impl Model {
     fn new() -> Self {
         Model {
             triangle_color: 0,
-            triangle_position: (WIDTH / 2, HEIGHT / 2),
+            triangle_position: (WIDTH as i32 / 2, HEIGHT as i32 / 2),
         }
     }
 }
@@ -32,6 +32,10 @@ impl Model {
 /// called every tick
 fn update(timing: Timing, model: &mut Model) {
     model.triangle_color = (timing.time_since_start.as_secs() % 4) as u8;
+
+    let t = timing.time_since_start.as_secs_f32();
+    model.triangle_position.0 = (WIDTH as f32 / 1. * (t.sin() + 1.)) as i32;
+    model.triangle_position.1 = (HEIGHT as f32 / 1. * (t.cos() + 1.)) as i32;
 }
 
 /// called every frame

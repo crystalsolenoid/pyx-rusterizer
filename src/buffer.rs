@@ -1,4 +1,4 @@
-use std::cmp;
+use std::{cmp, error::Error};
 
 /// u8 value, because that is the biggest that will fit into palette_pixels
 const COLOR_DEPTH: u8 = 4;
@@ -69,10 +69,34 @@ impl Buffer {
         }
     }
 
+    fn clamp_i32(x: i32, min: usize, max: usize) -> usize {
+        match usize::try_from(x) {
+            Ok(val) => val.clamp(min, max),
+            Err(_) => {
+                if x < 0 {
+                    min
+                } else {
+                    max
+                }
+            }
+        }
+    }
+
     //TODO change usize to i32, and check y bounds
-    pub fn h_line(&mut self, x1: usize, x2: usize, y: usize, color: u8) {
-        let start = cmp::max(x1, 0);
-        let end = cmp::min(x2, self.width);
+    pub fn h_line(&mut self, x1: i32, x2: i32, y: i32, color: u8) {
+        let y = match usize::try_from(y) {
+            Ok(val) => {
+                if val >= self.height {
+                    return;
+                } else {
+                    val
+                }
+            }
+            Err(_) => return,
+        };
+
+        let start = Self::clamp_i32(x1, 0, self.width);
+        let end = Self::clamp_i32(x2, 0, self.width);
 
         let offset = y * self.width;
         self.canvas[offset + start..offset + end].fill(color);
