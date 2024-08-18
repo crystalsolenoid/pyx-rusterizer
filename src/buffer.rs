@@ -55,7 +55,14 @@ impl Buffer {
     }
 
     /// sets a
-    pub fn pix(&mut self, x: usize, y: usize, color: u8) {
+    pub fn pix(&mut self, x: i32, y: i32, color: u8) {
+        let x = Self::clamp_i32(x, 0, self.width);
+        let y = Self::clamp_i32(y, 0, self.height);
+
+        Self::pix_unchecked(self, x, y, color);
+    }
+
+    fn pix_unchecked(&mut self, x: usize, y: usize, color: u8) {
         // update pixels
         self.canvas[y * self.width + x] = color;
 

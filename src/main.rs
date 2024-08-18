@@ -40,8 +40,12 @@ fn update(timing: Timing, model: &mut Model) {
 
 /// called every frame
 fn draw(buffer: &mut Buffer, model: &Model) {
-    for i in 0..buffer.width() * buffer.height() {
-        buffer.pix(i % buffer.width(), i / buffer.width(), ((i / 11) % 4) as u8);
+    for i in 0..(buffer.width() * buffer.height()) as i32 {
+        buffer.pix(
+            i % buffer.width() as i32,
+            i / buffer.width() as i32,
+            ((i / 11) % 4) as u8,
+        );
     }
     let tri_x = model.triangle_position.0 - 4;
     let tri_y = model.triangle_position.1 - 6;
