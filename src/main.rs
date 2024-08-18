@@ -1,7 +1,7 @@
 use minifb::{Key, Window, WindowOptions};
 use std::time::{Duration, Instant};
 
-use pyx_rusterizer::buffer::Buffer;
+use pyx_rusterizer::{buffer::Buffer, poly};
 
 const WIDTH: usize = 40;
 const HEIGHT: usize = 60;
@@ -49,11 +49,15 @@ fn draw(buffer: &mut Buffer, model: &Model) {
     }
     let tri_x = model.triangle_position.0 - 4;
     let tri_y = model.triangle_position.1 - 6;
-
-    buffer.h_line(3 + tri_x, 5 + tri_x, 5 + tri_y, model.triangle_color);
-    buffer.h_line(2 + tri_x, 6 + tri_x, 6 + tri_y, model.triangle_color);
-    buffer.h_line(2 + tri_x, 7 + tri_x, 7 + tri_y, model.triangle_color);
-    buffer.h_line(1 + tri_x, 8 + tri_x, 8 + tri_y, model.triangle_color);
+    poly::draw_tri(
+        buffer,
+        poly::Tri {
+            v1: (0., 0.),
+            v2: (0., 0.),
+            v3: (0., 0.),
+        },
+        model.triangle_color,
+    )
 }
 
 struct Timing {
