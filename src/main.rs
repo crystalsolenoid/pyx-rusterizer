@@ -39,30 +39,49 @@ fn update(timing: Timing, model: &mut Model) {
 }
 
 /// called every frame
-fn draw(buffer: &mut Buffer, model: &Model) {
-    for i in 0..(buffer.width() * buffer.height()) as i32 {
-        buffer.pix(
-            i % buffer.width() as i32,
-            i / buffer.width() as i32,
-            ((i / 11) % 4) as u8,
-        );
-    }
-    let tri_x = model.triangle_position.0 - 4;
-    let tri_y = model.triangle_position.1 - 6;
-    poly::draw_tri(
-        buffer,
-        poly::Tri {
-            v1: (0., 0.),
-            v2: (0., 0.),
-            v3: (0., 0.),
-        },
-        model.triangle_color,
-    )
+fn draw(buffer: &mut Buffer, _model: &Model) {
+    //for i in 0..(buffer.width() * buffer.height()) as i32 {
+    //    buffer.pix(
+    //        i % buffer.width() as i32,
+    //        i / buffer.width() as i32,
+    //        ((i / 11) % 4) as u8,
+    //    );
+    //}
+    //let tri_x = model.triangle_position.0 - 4;
+    //let tri_y = model.triangle_position.1 - 6;
+
+    let v1 = (20., 5.);
+    let v2 = (5., 55.);
+    let v3 = (35., 55.);
+    let v4 = (20., 35.);
+
+    let tri1 = poly::Tri {
+        v1: v1,
+        v2: v2,
+        v3: v4,
+    };
+    let tri2 = poly::Tri {
+        v1: v1,
+        v2: v3,
+        v3: v4,
+    };
+    let tri3 = poly::Tri {
+        v1: v2,
+        v2: v3,
+        v3: v4,
+    };
+
+    //buffer.pix(tri.v1.0 as i32, tri.v1.1 as i32, 3);
+    //buffer.pix(tri.v2.0 as i32, tri.v2.1 as i32, 3);
+    //buffer.pix(tri.v3.0 as i32, tri.v3.1 as i32, 3);
+    poly::draw_tri(buffer, &tri3, 3);
+    poly::draw_tri(buffer, &tri1, 1);
+    poly::draw_tri(buffer, &tri2, 2);
 }
 
 struct Timing {
     time_since_start: Duration,
-    delta: f32,
+    _delta: f32,
 }
 
 fn main() {
@@ -92,7 +111,7 @@ fn main() {
 
         timing = Timing {
             time_since_start: Instant::now() - start_instant,
-            delta: (Instant::now() - last_frame_instant).as_secs_f32(),
+            _delta: (Instant::now() - last_frame_instant).as_secs_f32(),
         };
         last_frame_instant = Instant::now();
 

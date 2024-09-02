@@ -1,5 +1,3 @@
-use std::{cmp, error::Error};
-
 /// u8 value, because that is the biggest that will fit into palette_pixels
 const COLOR_DEPTH: u8 = 4;
 
