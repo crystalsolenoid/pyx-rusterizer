@@ -1,7 +1,15 @@
+use glam::{Affine3A, Vec3};
 use minifb::{Key, Window, WindowOptions};
-use std::time::{Duration, Instant};
+use std::{
+    f32::consts::PI,
+    time::{Duration, Instant},
+};
 
-use pyx_rusterizer::{buffer::Buffer, poly};
+use pyx_rusterizer::{
+    buffer::Buffer,
+    geo::{Geo, Mesh, Triangle},
+    poly,
+};
 
 const WIDTH: usize = 40;
 const HEIGHT: usize = 60;
@@ -18,6 +26,7 @@ const PALETTE: [u32; 4] = [
 struct Model {
     triangle_color: u8,
     triangle_position: (i32, i32),
+    geo: Geo,
 }
 
 impl Model {
@@ -25,6 +34,27 @@ impl Model {
         Model {
             triangle_color: 0,
             triangle_position: (WIDTH as i32 / 2, HEIGHT as i32 / 2),
+            geo: Geo::new(
+                Box::new(Mesh {
+                    vertices: vec![
+                        Vec3::new(0., 0., 0.),
+                        Vec3::new(10., 0., 0.),
+                        Vec3::new(10., 10., 0.),
+                        Vec3::new(0., 10., 0.),
+                    ],
+                    triangles: vec![
+                        Triangle {
+                            index: (0, 1, 2),
+                            color: 1,
+                        },
+                        Triangle {
+                            index: (0, 2, 3),
+                            color: 2,
+                        },
+                    ],
+                }),
+                Affine3A::IDENTITY,
+            ),
         }
     }
 }
@@ -36,10 +66,14 @@ fn update(timing: Timing, model: &mut Model) {
     let t = timing.time_since_start.as_secs_f32();
     model.triangle_position.0 = (WIDTH as f32 / 1. * (t.sin() + 1.)) as i32;
     model.triangle_position.1 = (HEIGHT as f32 / 1. * (t.cos() + 1.)) as i32;
+
+    model.geo.transform = Affine3A::from_translation(Vec3::new(20., 40., 0.))
+        * Affine3A::from_rotation_z(t * PI / 2.);
 }
 
 /// called every frame
-fn draw(buffer: &mut Buffer, _model: &Model) {
+fn draw(buffer: &mut Buffer, model: &Model) {
+    buffer.clear_screen();
     //for i in 0..(buffer.width() * buffer.height()) as i32 {
     //    buffer.pix(
     //        i % buffer.width() as i32,
@@ -77,6 +111,8 @@ fn draw(buffer: &mut Buffer, _model: &Model) {
     poly::draw_tri(buffer, &tri3, 3);
     poly::draw_tri(buffer, &tri1, 1);
     poly::draw_tri(buffer, &tri2, 2);
+
+    model.geo.render(buffer);
 }
 
 struct Timing {

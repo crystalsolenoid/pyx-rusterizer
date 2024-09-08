@@ -1,5 +1,6 @@
 /// u8 value, because that is the biggest that will fit into palette_pixels
 const COLOR_DEPTH: u8 = 4;
+//TODO: create a type for indexed colors
 
 pub struct Buffer {
     /// unscaled width
@@ -51,7 +52,10 @@ impl Buffer {
     pub fn rgb_pixels(&self) -> &Vec<u32> {
         &self.rgb_pixels
     }
-
+    pub fn clear_screen(&mut self) {
+        self.canvas.fill(0);
+        self.rgb_pixels.fill(0);
+    }
     /// sets a
     pub fn pix(&mut self, x: i32, y: i32, color: u8) {
         let x = Self::clamp_i32(x, 0, self.width);
