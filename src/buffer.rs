@@ -2,6 +2,13 @@
 const COLOR_DEPTH: u8 = 4;
 //TODO: create a type for indexed colors
 
+/// Contains the current frames data both as both
+///
+/// `canvas`: unscaled, indexed colored mode
+///
+/// and
+///
+/// `rgb_pixels`: scaled up to screen resolution, rgb colors
 pub struct Buffer {
     /// unscaled width
     width: usize,
@@ -56,7 +63,7 @@ impl Buffer {
         self.canvas.fill(0);
         self.rgb_pixels.fill(0);
     }
-    /// sets a
+    /// sets an indexed color at `x`,`y`
     pub fn pix(&mut self, x: i32, y: i32, color: u8) {
         let x = Self::clamp_i32(x, 0, self.width);
         let y = Self::clamp_i32(y, 0, self.height);
