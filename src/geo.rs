@@ -44,7 +44,7 @@ impl Shape for Mesh {
 pub struct Geo {
     pub shape: Box<dyn Shape>,
     pub transform: Affine3A,
-    children: Vec<Geo>,
+    _children: Vec<Geo>,
 }
 
 impl Geo {
@@ -52,7 +52,7 @@ impl Geo {
         Geo {
             shape,
             transform,
-            children: Vec::new(),
+            _children: Vec::new(),
         }
     }
     pub fn render(&self, buffer: &mut Buffer) {

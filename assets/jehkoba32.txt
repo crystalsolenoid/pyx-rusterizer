@@ -1,0 +1,37 @@
+;paint.net Palette File
+;Downloaded from Lospec.com/palette-list
+;Palette Name: Jehkoba32
+;Description: Working from my Jehkoba64 palette and trimming down to half as many colours (including transparency), this 32-colour selection is perfect for emulating early SNES-style graphics, with vibrant tones and smooth ramping.&nbsp; Guaranteed to satisfy that retro itch. ♥<br>
+;Colors: 32
+FF000000
+FF00021c
+FF1c284d
+FF343473
+FF2d5280
+FF4d7a99
+FF7497a6
+FFa3ccd9
+FFf0edd8
+FF732866
+FFa6216e
+FFd94c87
+FFd9214f
+FFf25565
+FFf27961
+FF993649
+FFb36159
+FFf09c60
+FFb38f24
+FFb3b324
+FFf7c93e
+FF17735f
+FF119955
+FF67b31b
+FF1ba683
+FF47cca9
+FF96e3c9
+FF2469b3
+FF0b8be6
+FF0bafe6
+FFf28d85
+FFf0bb90

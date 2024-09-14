@@ -1,5 +1,5 @@
 /// u8 value, because that is the biggest that will fit into palette_pixels
-const COLOR_DEPTH: u8 = 4;
+const COLOR_DEPTH: u8 = 32;
 //TODO: create a type for indexed colors
 
 /// Contains the current frames data both as both
