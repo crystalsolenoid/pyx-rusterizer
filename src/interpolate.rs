@@ -1,27 +1,33 @@
 #[derive(Debug)]
 pub struct LerpIter {
-    m: f32,
-    x1: f32,
-    y1: f32,
     steps: usize,
-    step_size: f32,
+    step_x: f32,
+    step_y: f32,
+    next: (f32, f32),
     num_steps: usize,
 }
 
 impl LerpIter {
     pub fn new(p1: (f32, f32), p2: (f32, f32), num_steps: usize) -> Self {
-        let ((x1, y1), (x2, y2)) = if p1.0 < p2.0 { (p1, p2) } else { (p2, p1) };
-        let m = (y2 - y1) / (x2 - x1);
+        let ((x1, y1), (x2, y2)) = match (p1, p2) {
+            (pa, pb) if pa.0 < pb.0 => (pa, pb),
+            (pa, pb) if pa.0 == pb.0 && pa.1 < pb.1 => (pa, pb),
+            _ => (p2, p1),
+        };
+
         Self {
-            m,
-            y1,
-            x1,
             steps: 0,
-            step_size: match num_steps {
+            step_x: match num_steps {
                 0 => 1.,
                 1 => x2 - x1,
                 _ => (x2 - x1) / (num_steps - 1) as f32,
             },
+            step_y: match num_steps {
+                0 => 1.,
+                1 => y2 - y1,
+                _ => (y2 - y1) / (num_steps - 1) as f32,
+            },
+            next: (x1, y1),
             num_steps,
         }
     }
@@ -34,10 +40,13 @@ impl Iterator for LerpIter {
             return None;
         }
 
-        let x = self.x1 + self.steps as f32 * self.step_size;
-        let y = self.m * (self.x1 + x) + self.y1;
+        let current = self.next;
+
+        self.next.0 += self.step_x;
+        self.next.1 += self.step_y;
+
         self.steps += 1;
-        Some((x, y))
+        Some(current)
     }
 }
 
@@ -129,10 +138,21 @@ mod tests {
         )
     }
     #[test]
-    /// We return NAN for vertical lines for now.
-    /// Not sure yet what the best way to handle this is though
+    /// When x1 == x2, it's ambigous whether to count down or up with y,
+    /// we choose to count up
     fn vertical_line() {
-        let nan_tup: Vec<Point> = LerpIter::new((0., 0.), (0., 5.), 1).collect();
-        assert!(nan_tup[0].1.is_nan())
+        let vert: Vec<Point> = LerpIter::new((0., 0.), (0., 5.), 1).collect();
+        assert_eq!((0.0, 0.0), vert[0])
+    }
+    #[test]
+    /// swapping the points doesn't change the output
+    fn vertical_line_2() {
+        let vert: Vec<Point> = LerpIter::new((0., 5.), (0., 0.), 1).collect();
+        assert_eq!((0.0, 0.0), vert[0])
+    }
+    #[test]
+    fn vertical_line_3() {
+        let vert: Vec<Point> = LerpIter::new((0., 5.), (0., 0.), 3).collect();
+        assert_eq!(vec![(0.0, 0.0), (0.0, 2.5), (0.0, 5.0)], vert)
     }
 }
