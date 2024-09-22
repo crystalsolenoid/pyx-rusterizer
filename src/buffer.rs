@@ -1,3 +1,5 @@
+use core::f32;
+
 /// u8 value, because that is the biggest that will fit into palette_pixels
 const COLOR_DEPTH: u8 = 32;
 //TODO: create a type for indexed colors
@@ -20,6 +22,7 @@ pub struct Buffer {
     /// User controlled, screen buffer, holding color palette indices
     /// Length is `width * height` (not scaled by `scale`)
     canvas: Vec<u8>,
+    z_buffer: Vec<f32>,
 
     /// API Controlled screen buffer holding u32 values that represent rgb values
     /// Length is `(width  * scale) * (height * scale)`
@@ -41,6 +44,7 @@ impl Buffer {
             height,
             palette,
             canvas: vec![0; width * height],
+            z_buffer: vec![f32::NEG_INFINITY; width * height],
             rgb_pixels: vec![palette[0]; (width * scale) * (height * scale)],
 
             scale,
@@ -61,6 +65,7 @@ impl Buffer {
     }
     pub fn clear_screen(&mut self) {
         self.canvas.fill(0);
+        self.z_buffer.fill(f32::NEG_INFINITY);
         self.rgb_pixels.fill(0);
     }
     /// sets an indexed color at `x`,`y`
@@ -98,6 +103,8 @@ impl Buffer {
         }
     }
 
+    //pub fn h_line_3d(&mut self, x1: i32, x2: i32, z1: f32, z2: f32, y: i32, color: u8) {
+
     //TODO change usize to i32, and check y bounds
     pub fn h_line(&mut self, x1: i32, x2: i32, y: i32, color: u8) {
         let y = match usize::try_from(y) {
@@ -116,6 +123,11 @@ impl Buffer {
 
         let offset = y * self.width;
         self.canvas[offset + start..offset + end].fill(color);
+        //let z_values = LerpIterator::new(z1,z2,end-start);
+        //self.z_buffer[offset + start..offset + end]
+        //    .iter_mut().enumerate().map(|(i,z)|{
+        //    lerp::LerpIterator(z1,z2,control)
+        //} )
 
         let rgb_color = self.palette[color as usize];
 
