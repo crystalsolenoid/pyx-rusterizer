@@ -32,9 +32,9 @@ impl Shape for Mesh {
         for triangle in &self.triangles {
             let (t1, t2, t3) = triangle.index;
             let vert_tri = Tri {
-                v1: (transformed_verts[t1].x, transformed_verts[t1].y),
-                v2: (transformed_verts[t2].x, transformed_verts[t2].y),
-                v3: (transformed_verts[t3].x, transformed_verts[t3].y),
+                v1: transformed_verts[t1],
+                v2: transformed_verts[t2],
+                v3: transformed_verts[t3],
             };
             poly::draw_tri(buffer, &vert_tri, triangle.color);
         }

@@ -1,5 +1,9 @@
 use core::f32;
 
+use glam::Vec2;
+
+use crate::interpolate::{lerp, LerpIter};
+
 /// u8 value, because that is the biggest that will fit into palette_pixels
 const COLOR_DEPTH: u8 = 32;
 //TODO: create a type for indexed colors
@@ -106,7 +110,7 @@ impl Buffer {
     //pub fn h_line_3d(&mut self, x1: i32, x2: i32, z1: f32, z2: f32, y: i32, color: u8) {
 
     //TODO change usize to i32, and check y bounds
-    pub fn h_line(&mut self, x1: i32, x2: i32, y: i32, color: u8) {
+    pub fn h_line(&mut self, x1: f32, x2: f32, y: i32, z1: f32, z2: f32, color: u8) {
         let y = match usize::try_from(y) {
             Ok(val) => {
                 if val >= self.height {
@@ -118,24 +122,40 @@ impl Buffer {
             Err(_) => return,
         };
 
-        let start = Self::clamp_i32(x1, 0, self.width);
-        let end = Self::clamp_i32(x2, 0, self.width);
+        let x1_int = x1.ceil() as i32;
+        let x2_int = x2.floor() as i32 + 1;
 
-        let offset = y * self.width;
-        self.canvas[offset + start..offset + end].fill(color);
-        //let z_values = LerpIterator::new(z1,z2,end-start);
-        //self.z_buffer[offset + start..offset + end]
-        //    .iter_mut().enumerate().map(|(i,z)|{
-        //    lerp::LerpIterator(z1,z2,control)
-        //} )
+        let x_start = Self::clamp_i32(x1_int, 0, self.width);
+        let x_end = Self::clamp_i32(x2_int, 0, self.width);
+        let z_start = lerp(Vec2::new(z1, x1), Vec2::new(z2, x2), x_start as f32);
+        let z_end = lerp(Vec2::new(z1, x1), Vec2::new(z2, x2), x_end as f32);
+
+        let h_line_width = x_end - x_start;
+
+        let canvas_offset = y * self.width;
+        let range = x_start..x_end;
+
+        let z_values = LerpIter::new(
+            (x_start as f32, z_start),
+            (x_end as f32, z_end),
+            h_line_width,
+        );
 
         let rgb_color = self.palette[color as usize];
-
-        for row in y * self.scale..(y + 1) * self.scale {
-            let offset = row * self.width * self.scale;
-            let slice =
-                &mut self.rgb_pixels[offset + start * self.scale..end * self.scale + offset];
-            slice.fill(rgb_color);
-        }
+        range
+            .zip(z_values)
+            //.filter(|(x, (_, z))| self.z_buffer[*x] < *z)
+            .for_each(|(x, (_, z))| {
+                if z >= self.z_buffer[canvas_offset + x] {
+                    self.z_buffer[canvas_offset + x] = z;
+                    self.canvas[canvas_offset + x] = color;
+                    for row in y * self.scale..(y + 1) * self.scale {
+                        let offset = row * self.width * self.scale;
+                        let slice = &mut self.rgb_pixels
+                            [offset + x * self.scale..(x + 1) * self.scale + offset];
+                        slice.fill(rgb_color);
+                    }
+                }
+            });
     }
 }

@@ -1,3 +1,15 @@
+use glam::Vec2;
+
+pub fn lerp(p1: Vec2, p2: Vec2, y: f32) -> f32 {
+    let x1 = p1.x;
+    let y1 = p1.y;
+    let x2 = p2.x;
+    let y2 = p2.y;
+    let inv_m = (x2 - x1) / (y2 - y1);
+    let x = inv_m * (y - y1) + x1;
+    x
+}
+
 #[derive(Debug)]
 pub struct LerpIter {
     steps: usize,

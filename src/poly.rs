@@ -1,9 +1,12 @@
-use crate::buffer::Buffer;
+use std::cmp::Ordering;
+
+use crate::{buffer::Buffer, interpolate::lerp};
+use glam::{f32::Vec3, Vec3Swizzles};
 
 pub struct Tri {
-    pub v1: (f32, f32),
-    pub v2: (f32, f32),
-    pub v3: (f32, f32),
+    pub v1: Vec3,
+    pub v2: Vec3,
+    pub v3: Vec3,
 }
 
 pub fn draw_tri(buffer: &mut Buffer, tri: &Tri, color: u8) {
@@ -12,57 +15,68 @@ pub fn draw_tri(buffer: &mut Buffer, tri: &Tri, color: u8) {
 }
 
 struct UpDownTri {
-    tip_x: f32,
-    tip_y: f32,
-    base_y: f32,
-    base_left_x: f32,
-    base_right_x: f32,
+    tip: Vec3,
+    base_left: Vec3,
+    base_right: Vec3,
 }
 
 impl UpDownTri {
-    fn new(base_1: (f32, f32), base_2: (f32, f32), tip: (f32, f32)) -> Self {
+    fn new(base_1: Vec3, base_2: Vec3, tip: Vec3) -> Self {
+        assert_eq!(base_1.y, base_2.y);
+        let (base_left, base_right) = match base_1.x.partial_cmp(&base_2.x) {
+            Some(Ordering::Greater) => (base_2, base_1),
+            _ => (base_1, base_2),
+        };
+
         UpDownTri {
-            tip_x: tip.0,
-            tip_y: tip.1,
-            base_y: base_1.1,
-            base_left_x: base_1.0.min(base_2.0),
-            base_right_x: base_1.0.max(base_2.0),
+            tip,
+            base_left,
+            base_right,
         }
     }
+
     fn draw_up(self, buffer: &mut Buffer, color: u8) {
-        let base_y = self.base_y.floor() as i32;
-        let tip_y = self.tip_y.ceil() as i32;
-        let base_left = (self.base_left_x, self.base_y);
-        let base_right = (self.base_right_x, self.base_y);
-        let tip = (self.tip_x, self.tip_y);
+        let base_y = self.base_left.y.floor() as i32;
+        let tip_y = self.tip.y.ceil() as i32;
+        let base_left = self.base_left;
+        let base_right = self.base_right;
+        let tip = self.tip;
 
         (tip_y..=base_y).for_each(|y| {
-            let x_next_left = lerp(base_left, tip, y as f32);
-            let x_next_right = lerp(base_right, tip, y as f32);
+            let x_next_left = lerp(base_left.xy(), tip.xy(), y as f32);
+            let x_next_right = lerp(base_right.xy(), tip.xy(), y as f32);
+            let z_next_left = lerp(base_left.zy(), tip.zy(), y as f32);
+            let z_next_right = lerp(base_right.zy(), tip.zy(), y as f32);
 
             buffer.h_line(
-                x_next_left.ceil() as i32,
-                x_next_right.floor() as i32 + 1,
+                x_next_left,
+                x_next_right,
                 y,
+                z_next_left,
+                z_next_right,
                 color,
             )
         });
     }
     fn draw_down(self, buffer: &mut Buffer, color: u8) {
-        let base_y = self.base_y.ceil() as i32;
-        let tip_y = self.tip_y.floor() as i32;
-        let base_left = (self.base_left_x, self.base_y);
-        let base_right = (self.base_right_x, self.base_y);
-        let tip = (self.tip_x, self.tip_y);
+        let base_y = self.base_left.y.ceil() as i32;
+        let tip_y = self.tip.y.floor() as i32;
+        let base_left = self.base_left;
+        let base_right = self.base_right;
+        let tip = self.tip;
 
         (base_y..=tip_y).for_each(|y| {
-            let x_next_left = lerp(base_left, tip, y as f32);
-            let x_next_right = lerp(base_right, tip, y as f32);
+            let x_next_left = lerp(base_left.xy(), tip.xy(), y as f32);
+            let x_next_right = lerp(base_right.xy(), tip.xy(), y as f32);
+            let z_next_left = lerp(base_left.zy(), tip.zy(), y as f32);
+            let z_next_right = lerp(base_right.zy(), tip.zy(), y as f32);
 
             buffer.h_line(
-                x_next_left.ceil() as i32,
-                x_next_right.floor() as i32 + 1,
+                x_next_left,
+                x_next_right,
                 y,
+                z_next_left,
+                z_next_right,
                 color,
             )
         });
@@ -77,13 +91,13 @@ struct SplitTriangle {
 impl SplitTriangle {
     fn new(tri: &Tri) -> Self {
         let mut points = [tri.v1, tri.v2, tri.v3];
-        points.sort_by(|t1, t2| t1.1.partial_cmp(&t2.1).unwrap());
+        points.sort_by(|t1, t2| t1.y.partial_cmp(&t2.y).unwrap());
         let top_point = points[0];
         let mid_point = points[1];
         let bot_point = points[2];
 
         // check for a horizontal straight line
-        if bot_point.1 == mid_point.1 && mid_point.1 == top_point.1 {
+        if bot_point.y == mid_point.y && mid_point.y == top_point.y {
             return SplitTriangle {
                 up_tri: None,
                 down_tri: None,
@@ -91,32 +105,33 @@ impl SplitTriangle {
         };
 
         // check if already up
-        if bot_point.1 == mid_point.1 {
+        if bot_point.y == mid_point.y {
             return SplitTriangle {
                 up_tri: Some(UpDownTri::new(bot_point, mid_point, top_point)),
                 down_tri: None,
             };
         };
         // check if already down
-        if top_point.1 == mid_point.1 {
+        if top_point.y == mid_point.y {
             return SplitTriangle {
                 up_tri: None,
                 down_tri: Some(UpDownTri::new(top_point, mid_point, bot_point)),
             };
         };
 
-        let new_base_y = mid_point.1;
-        let new_base_x = lerp(top_point, bot_point, new_base_y);
+        let new_base_y = mid_point.y;
+        let new_base_x = lerp(top_point.xy(), bot_point.xy(), new_base_y);
+        let new_base_z = lerp(top_point.zy(), bot_point.zy(), new_base_y);
 
         SplitTriangle {
             up_tri: Some(UpDownTri::new(
                 mid_point,
-                (new_base_x, new_base_y),
+                Vec3::new(new_base_x, new_base_y, new_base_z),
                 top_point,
             )),
             down_tri: Some(UpDownTri::new(
                 mid_point,
-                (new_base_x, new_base_y),
+                Vec3::new(new_base_x, new_base_y, new_base_z),
                 bot_point,
             )),
         }
@@ -131,13 +146,4 @@ impl SplitTriangle {
             None => (),
         }
     }
-}
-fn lerp(p1: (f32, f32), p2: (f32, f32), y: f32) -> f32 {
-    let x1 = p1.0;
-    let y1 = p1.1;
-    let x2 = p2.0;
-    let y2 = p2.1;
-    let inv_m = (x2 - x1) / (y2 - y1);
-    let x = inv_m * (y - y1) + x1;
-    x
 }
