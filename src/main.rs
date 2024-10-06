@@ -145,8 +145,8 @@ fn update(timing: Timing, model: &mut Model) {
     let t = timing.time_since_start.as_secs_f32();
 
     model.cube.transform = Affine3A::from_translation(Vec3::new(20., 25., 0.))
-        * Affine3A::from_rotation_y(t * PI / 2.)
-        * Affine3A::from_rotation_x(t * PI / 3.)
+        * Affine3A::from_rotation_y(-t * PI / 3.)
+        * Affine3A::from_rotation_x(-t * PI / 3.)
         * Affine3A::from_scale(Vec3::splat(15.));
 }
 

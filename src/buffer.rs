@@ -107,9 +107,6 @@ impl Buffer {
         }
     }
 
-    //pub fn h_line_3d(&mut self, x1: i32, x2: i32, z1: f32, z2: f32, y: i32, color: u8) {
-
-    //TODO change usize to i32, and check y bounds
     pub fn h_line(&mut self, x1: f32, x2: f32, y: i32, z1: f32, z2: f32, color: u8) {
         let y = match usize::try_from(y) {
             Ok(val) => {
@@ -127,6 +124,7 @@ impl Buffer {
 
         let x_start = Self::clamp_i32(x1_int, 0, self.width);
         let x_end = Self::clamp_i32(x2_int, 0, self.width);
+
         let z_start = lerp(Vec2::new(z1, x1), Vec2::new(z2, x2), x_start as f32);
         let z_end = lerp(Vec2::new(z1, x1), Vec2::new(z2, x2), x_end as f32);
 
@@ -138,24 +136,25 @@ impl Buffer {
         let z_values = LerpIter::new(
             (x_start as f32, z_start),
             (x_end as f32, z_end),
-            h_line_width,
+            h_line_width + 1,
         );
 
         let rgb_color = self.palette[color as usize];
-        range
-            .zip(z_values)
-            //.filter(|(x, (_, z))| self.z_buffer[*x] < *z)
-            .for_each(|(x, (_, z))| {
-                if z >= self.z_buffer[canvas_offset + x] {
-                    self.z_buffer[canvas_offset + x] = z;
-                    self.canvas[canvas_offset + x] = color;
-                    for row in y * self.scale..(y + 1) * self.scale {
-                        let offset = row * self.width * self.scale;
-                        let slice = &mut self.rgb_pixels
-                            [offset + x * self.scale..(x + 1) * self.scale + offset];
-                        slice.fill(rgb_color);
-                    }
+        range.zip(z_values).for_each(|(x, (_, z))| {
+            //// Z buffer test
+            if z > self.z_buffer[canvas_offset + x] {
+                //// Update Canvas/Z-buffer
+                self.z_buffer[canvas_offset + x] = z;
+                self.canvas[canvas_offset + x] = color;
+
+                //// Update rgb_pixels
+                for row in y * self.scale..(y + 1) * self.scale {
+                    let offset = row * self.width * self.scale;
+                    let slice = &mut self.rgb_pixels
+                        [offset + x * self.scale..(x + 1) * self.scale + offset];
+                    slice.fill(rgb_color);
                 }
-            });
+            }
+        });
     }
 }
