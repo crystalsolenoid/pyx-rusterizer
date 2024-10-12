@@ -1,4 +1,4 @@
-use std::fs::read_to_string;
+use std::{fs::read_to_string, path::Path};
 
 use glam::Vec3;
 
@@ -15,8 +15,8 @@ enum Line {
     Face(Vec<usize>, Color),
 }
 
-pub fn parse() -> Mesh {
-    let obj_string = read_to_string("assets/porygon/model.obj").unwrap();
+pub fn parse(path: &Path) -> Mesh {
+    let obj_string = read_to_string(path).unwrap();
     let mut current_material = Color::Red;
     let data: Vec<_> = obj_string
         .lines()

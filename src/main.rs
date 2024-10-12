@@ -2,6 +2,7 @@ use glam::{Affine3A, Vec3};
 use minifb::{Key, Window, WindowOptions};
 use std::{
     f32::consts::PI,
+    path::Path,
     time::{Duration, Instant},
 };
 
@@ -25,7 +26,7 @@ struct Model {
 
 impl Model {
     fn new() -> Self {
-        let obj = obj::parse();
+        let obj = obj::parse(Path::new("assets/porygon/model.obj"));
         println!("{:?}", obj);
         Model {
             cube: Geo::new(Box::new(obj), Affine3A::IDENTITY),
