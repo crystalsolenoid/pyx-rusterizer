@@ -11,12 +11,14 @@ pub trait Shape {
 
 type Vertex = Vec3;
 
+#[derive(Debug)]
 pub struct Triangle {
     /// indices that correspond to vertiecs in Mesh
     pub index: (usize, usize, usize),
     pub color: u8,
 }
 
+#[derive(Debug)]
 pub struct Mesh {
     pub vertices: Vec<Vertex>,
     pub triangles: Vec<Triangle>,
