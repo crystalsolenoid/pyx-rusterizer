@@ -2,7 +2,10 @@ use core::f32;
 
 use glam::Vec2;
 
-use crate::interpolate::{lerp, LerpIter};
+use crate::{
+    color::Color,
+    interpolate::{lerp, LerpIter},
+};
 
 /// u8 value, because that is the biggest that will fit into palette_pixels
 const COLOR_DEPTH: u8 = 32;
@@ -25,7 +28,7 @@ pub struct Buffer {
 
     /// User controlled, screen buffer, holding color palette indices
     /// Length is `width * height` (not scaled by `scale`)
-    canvas: Vec<u8>,
+    canvas: Vec<Color>,
     z_buffer: Vec<f32>,
 
     /// API Controlled screen buffer holding u32 values that represent rgb values
@@ -47,7 +50,7 @@ impl Buffer {
             width,
             height,
             palette,
-            canvas: vec![0; width * height],
+            canvas: vec![Color::Black; width * height],
             z_buffer: vec![f32::NEG_INFINITY; width * height],
             rgb_pixels: vec![palette[0]; (width * scale) * (height * scale)],
 
@@ -68,19 +71,19 @@ impl Buffer {
         &self.rgb_pixels
     }
     pub fn clear_screen(&mut self) {
-        self.canvas.fill(0);
+        self.canvas.fill(Color::Black);
         self.z_buffer.fill(f32::NEG_INFINITY);
         self.rgb_pixels.fill(0);
     }
     /// sets an indexed color at `x`,`y`
-    pub fn pix(&mut self, x: i32, y: i32, color: u8) {
+    pub fn pix(&mut self, x: i32, y: i32, color: Color) {
         let x = Self::clamp_i32(x, 0, self.width);
         let y = Self::clamp_i32(y, 0, self.height);
 
         Self::pix_unchecked(self, x, y, color);
     }
 
-    fn pix_unchecked(&mut self, x: usize, y: usize, color: u8) {
+    fn pix_unchecked(&mut self, x: usize, y: usize, color: Color) {
         // update pixels
         self.canvas[y * self.width + x] = color;
 
@@ -107,7 +110,7 @@ impl Buffer {
         }
     }
 
-    pub fn h_line(&mut self, x1: f32, x2: f32, y: i32, z1: f32, z2: f32, color: u8) {
+    pub fn h_line(&mut self, x1: f32, x2: f32, y: i32, z1: f32, z2: f32, color: Color) {
         let y = match usize::try_from(y) {
             Ok(val) => {
                 if val >= self.height {

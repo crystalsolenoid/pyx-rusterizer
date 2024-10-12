@@ -2,18 +2,22 @@ use std::fs::read_to_string;
 
 use glam::Vec3;
 
-use crate::geo::{Mesh, Triangle};
+use crate::{
+    color::Color,
+    geo::{Mesh, Triangle},
+};
 
 #[derive(Debug)]
 #[allow(dead_code)]
 enum Line {
     ObjectName(String),
     Vertex(f32, f32, f32),
-    Face(Vec<usize>),
+    Face(Vec<usize>, Color),
 }
 
 pub fn parse() -> Mesh {
     let obj_string = read_to_string("assets/porygon/model.obj").unwrap();
+    let mut current_material = Color::Red;
     let data: Vec<_> = obj_string
         .lines()
         .filter_map(|line| {
@@ -22,7 +26,7 @@ pub fn parse() -> Mesh {
             //let tail = tokens.collect();
             match tokens.next() {
                 Some("o") => {
-                    let name: String = tokens.next().unwrap().parse().unwrap();
+                    let name = tokens.next().unwrap().to_string();
                     Some(Line::ObjectName(name))
                 }
                 Some("v") => {
@@ -35,13 +39,23 @@ pub fn parse() -> Mesh {
                         .map(|s| s.split("/").next().unwrap().parse::<usize>().unwrap() - 1)
                         .collect();
                     assert!(fs.len() > 2);
-                    Some(Line::Face(fs))
+                    Some(Line::Face(fs, current_material))
                 }
                 Some("g") => None,
                 Some("vn") => None,
                 Some("vt") => None,
                 Some("#") => None,
-                Some("usemtl") => None,
+                Some("usemtl") => {
+                    let name = tokens.next().unwrap().to_string();
+                    current_material = match name.as_str() {
+                        "mat4" => Color::Cyan2,
+                        "mat8" => Color::Red,
+                        "mat21" => Color::White,
+                        "mat23" => Color::Black,
+                        _ => Color::Pink0,
+                    };
+                    None
+                }
                 Some("mtllib") => None, // Not sure what this is!
                 None => None,
                 _ => todo!("{:?}", tokens),
@@ -59,38 +73,34 @@ pub fn parse() -> Mesh {
 
     let triangles = data
         .iter()
-        .enumerate() // Temporarily use index for tri color
-        .filter_map(|(i, line)| {
-            let color = (i % 32) as u8;
-            match line {
-                Line::Face(fs) => match fs.len() {
-                    0..=2 => panic!(),
-                    3 => Some(vec![Triangle {
+        .filter_map(|line| match line {
+            Line::Face(fs, color) => match fs.len() {
+                0..=2 => panic!(),
+                3 => Some(vec![Triangle {
+                    index: (fs[0], fs[1], fs[2]),
+                    color: *color,
+                }]),
+                4 => Some(vec![
+                    Triangle {
                         index: (fs[0], fs[1], fs[2]),
-                        color,
-                    }]),
-                    4 => Some(vec![
-                        Triangle {
-                            index: (fs[0], fs[1], fs[2]),
-                            color,
-                        },
-                        Triangle {
-                            index: (fs[2], fs[3], fs[0]),
-                            color,
-                        },
-                    ]),
-                    _ => Some(
-                        fs[1..]
-                            .windows(2)
-                            .map(|window_f| Triangle {
-                                index: (fs[0], window_f[0], window_f[1]),
-                                color,
-                            })
-                            .collect::<Vec<_>>(),
-                    ),
-                },
-                _ => None,
-            }
+                        color: *color,
+                    },
+                    Triangle {
+                        index: (fs[2], fs[3], fs[0]),
+                        color: *color,
+                    },
+                ]),
+                _ => Some(
+                    fs[1..]
+                        .windows(2)
+                        .map(|window_f| Triangle {
+                            index: (fs[0], window_f[0], window_f[1]),
+                            color: *color,
+                        })
+                        .collect::<Vec<_>>(),
+                ),
+            },
+            _ => None,
         })
         .flatten()
         .collect();

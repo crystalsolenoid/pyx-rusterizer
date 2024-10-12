@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use crate::{buffer::Buffer, interpolate::lerp};
+use crate::{buffer::Buffer, color::Color, interpolate::lerp};
 use glam::{f32::Vec3, Vec3Swizzles};
 
 pub struct Tri {
@@ -9,7 +9,7 @@ pub struct Tri {
     pub v3: Vec3,
 }
 
-pub fn draw_tri(buffer: &mut Buffer, tri: &Tri, color: u8) {
+pub fn draw_tri(buffer: &mut Buffer, tri: &Tri, color: Color) {
     let split_triange = SplitTriangle::new(tri);
     split_triange.draw(buffer, color);
 }
@@ -35,7 +35,7 @@ impl UpDownTri {
         }
     }
 
-    fn draw_up(self, buffer: &mut Buffer, color: u8) {
+    fn draw_up(self, buffer: &mut Buffer, color: Color) {
         let base_y = self.base_left.y.floor() as i32;
         let tip_y = self.tip.y.ceil() as i32;
         let base_left = self.base_left;
@@ -58,7 +58,7 @@ impl UpDownTri {
             )
         });
     }
-    fn draw_down(self, buffer: &mut Buffer, color: u8) {
+    fn draw_down(self, buffer: &mut Buffer, color: Color) {
         let base_y = self.base_left.y.ceil() as i32;
         let tip_y = self.tip.y.floor() as i32;
         let base_left = self.base_left;
@@ -136,7 +136,7 @@ impl SplitTriangle {
             )),
         }
     }
-    fn draw(self, buffer: &mut Buffer, color: u8) {
+    fn draw(self, buffer: &mut Buffer, color: Color) {
         match self.up_tri {
             Some(tri) => tri.draw_up(buffer, color),
             None => (),

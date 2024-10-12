@@ -2,6 +2,7 @@ use glam::{Affine3A, Vec3};
 
 use crate::{
     buffer::Buffer,
+    color::Color,
     poly::{self, Tri},
 };
 
@@ -15,7 +16,7 @@ type Vertex = Vec3;
 pub struct Triangle {
     /// indices that correspond to vertiecs in Mesh
     pub index: (usize, usize, usize),
-    pub color: u8,
+    pub color: Color,
 }
 
 #[derive(Debug)]

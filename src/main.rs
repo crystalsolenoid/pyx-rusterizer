@@ -19,41 +19,6 @@ const PALETTE: [u32; 32] = [
     0xFF1ba683, 0xFF47cca9, 0xFF96e3c9, 0xFF2469b3, 0xFF0b8be6, 0xFF0bafe6, 0xFFf28d85, 0xFFf0bb90,
 ];
 
-pub enum Color {
-    Black,
-    Blue0,
-    Blue1,
-    Blue2,
-    Blue3,
-    Blue4,
-    Blue5,
-    Blue6,
-    White,
-    Purple,
-    Pink0,
-    Pink1,
-    Red,
-    Coral,
-    Orange,
-    Brown0,
-    Brown1,
-    Brown2,
-    Dijon,
-    Avacado,
-    Yellow,
-    Green0,
-    Green1,
-    Green2,
-    Aqua0,
-    Aqua1,
-    Aqua2,
-    Cyan0,
-    Cyan1,
-    Cyan2,
-    Pink2,
-    Pink3,
-}
-
 struct Model {
     cube: Geo,
 }
