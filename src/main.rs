@@ -26,7 +26,7 @@ struct Model {
 
 impl Model {
     fn new() -> Self {
-        let obj = obj::parse(Path::new("assets/porygon/model.obj"));
+        let obj = obj::parse(Path::new("assets/porygon/model.obj")).unwrap();
         println!("{:?}", obj);
         Model {
             cube: Geo::new(Box::new(obj), Affine3A::IDENTITY),

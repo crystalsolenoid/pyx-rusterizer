@@ -1,4 +1,4 @@
-use std::{fs::read_to_string, path::Path};
+use std::{fs::read_to_string, io::Error, path::Path};
 
 use glam::Vec3;
 
@@ -13,55 +13,89 @@ enum Line {
     ObjectName(String),
     Vertex(f32, f32, f32),
     Face(Vec<usize>, Color),
+    UseMtl(String, Color), // Color might be removed later
 }
-
-pub fn parse(path: &Path) -> Mesh {
-    let obj_string = read_to_string(path).unwrap();
+pub fn parse(path: &Path) -> Result<Mesh, Error> {
+    let obj_string = read_to_string(path)?;
     let mut current_material = Color::Red;
     let data: Vec<_> = obj_string
         .lines()
         .filter_map(|line| {
             let mut tokens = line.split_whitespace();
-            //let head = tokens.next();
-            //let tail = tokens.collect();
             match tokens.next() {
-                Some("o") => {
-                    let name = tokens.next().unwrap().to_string();
-                    Some(Line::ObjectName(name))
-                }
-                Some("v") => {
-                    let vs: Vec<f32> = tokens.map(|s| s.parse().unwrap()).collect();
-                    assert!(vs.len() == 3);
-                    Some(Line::Vertex(vs[0], vs[1], vs[2]))
-                }
-                Some("f") => {
-                    let fs: Vec<usize> = tokens
-                        .map(|s| s.split("/").next().unwrap().parse::<usize>().unwrap() - 1)
-                        .collect();
-                    assert!(fs.len() > 2);
-                    Some(Line::Face(fs, current_material))
-                }
+                Some("o") => Some(
+                    tokens
+                        .next()
+                        .ok_or(Error::other("Missing object name"))
+                        .map(|name| Line::ObjectName(name.to_string())),
+                ),
+                Some("v") => Some(
+                    tokens
+                        .map(|s| {
+                            s.parse().map_err(|_| {
+                                Error::other(std::format!("Expected Float; found {s}"))
+                            })
+                        })
+                        .collect::<Result<Vec<_>, _>>()
+                        .and_then(|vs| match vs.len() {
+                            3 => Ok(Line::Vertex(vs[0], vs[1], vs[2])),
+                            _ => Err(Error::other(std::format!(
+                                "Expected 3 Floats; found {vs:?}"
+                            ))),
+                        }),
+                ),
+                Some("f") => Some(
+                    tokens
+                        .map(|s| {
+                            s.split("/")
+                                .next()
+                                .ok_or(Error::other("Missing vertex index"))
+                                .and_then(|vertex_index| {
+                                    vertex_index.parse::<usize>().map_err(|_| {
+                                        Error::other(std::format!(
+                                            "Expected usize index; found {vertex_index}"
+                                        ))
+                                    })
+                                })
+                                .and_then(|vertex_index| {
+                                    vertex_index.checked_sub(1).ok_or(Error::other(
+                                        "Expected non-zero vertex index; obj indices start at 1!",
+                                    ))
+                                })
+                        })
+                        .collect::<Result<Vec<_>, _>>()
+                        .and_then(|fs| match fs.len() {
+                            3.. => Ok(Line::Face(fs, current_material)),
+                            _ => Err(Error::other(std::format!(
+                                "Expected 3 or more vertex indices, found {fs:?}"
+                            ))),
+                        }),
+                ),
                 Some("g") => None,
                 Some("vn") => None,
                 Some("vt") => None,
                 Some("#") => None,
-                Some("usemtl") => {
-                    let name = tokens.next().unwrap().to_string();
-                    current_material = match name.as_str() {
-                        "mat4" => Color::Cyan2,
-                        "mat8" => Color::Red,
-                        "mat21" => Color::White,
-                        "mat23" => Color::Black,
-                        _ => Color::Pink0,
-                    };
-                    None
-                }
+                Some("usemtl") => Some(
+                    tokens
+                        .next()
+                        .ok_or(Error::other("Missing object name"))
+                        .map(|name| {
+                            current_material = match name {
+                                "mat4" => Color::Cyan2,
+                                "mat8" => Color::Red,
+                                "mat21" => Color::White,
+                                "mat23" => Color::Black,
+                                _ => Color::Pink0,
+                            };
+                            Line::UseMtl(name.to_string(), current_material)
+                        }),
+                ),
                 Some("mtllib") => None, // Not sure what this is!
                 None => None,
                 _ => todo!("{:?}", tokens),
             }
         })
-        .collect();
+        .collect::<Result<Vec<_>, _>>()?;
 
     let vertices = data
         .iter()
@@ -105,8 +139,8 @@ pub fn parse(path: &Path) -> Mesh {
         .flatten()
         .collect();
 
-    Mesh {
+    Ok(Mesh {
         triangles,
         vertices,
-    }
+    })
 }
