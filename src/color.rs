@@ -33,3 +33,19 @@ pub enum Color {
     Pink2,
     Pink3,
 }
+
+/// Convert a float between 0.0 and 1.0 to a grayscale indexed color.
+/// Overflowing values are white
+pub fn grayscale(value: f32) -> Color {
+    match (value * 8.).floor() as u8 {
+        0 => Color::Black,
+        1 => Color::Blue0,
+        2 => Color::Blue1,
+        3 => Color::Blue2,
+        4 => Color::Blue3,
+        5 => Color::Blue4,
+        6 => Color::Blue5,
+        7 => Color::Blue6,
+        _ => Color::White,
+    }
+}

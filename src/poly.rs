@@ -1,6 +1,10 @@
 use std::cmp::Ordering;
 
-use crate::{buffer::Buffer, color::Color, interpolate::lerp};
+use crate::{
+    buffer::Buffer,
+    color::{grayscale, Color},
+    interpolate::lerp,
+};
 use glam::{f32::Vec3, Vec3Swizzles};
 
 pub struct Tri {
@@ -137,12 +141,33 @@ impl SplitTriangle {
         }
     }
     fn draw(self, buffer: &mut Buffer, color: Color) {
+        let diffuse_light = 0.2;
         match self.up_tri {
-            Some(tri) => tri.draw_up(buffer, color),
+            Some(tri) => {
+                let light_pos = Vec3::new(100., 0.0, 0.0);
+                let tri_pos = (tri.tip + tri.base_right + tri.base_left) / 3.;
+                let v1 = tri.tip - tri.base_left;
+                let v2 = tri.tip - tri.base_right;
+                let normal = v1.cross(v2).normalize();
+                let light_to_tri = (tri_pos - light_pos).normalize();
+                let light_amount = (normal.dot(light_to_tri).clamp(0.0, 1.0)) + diffuse_light;
+
+                tri.draw_up(buffer, grayscale(light_amount))
+            }
             None => (),
         }
         match self.down_tri {
-            Some(tri) => tri.draw_down(buffer, color),
+            Some(tri) => {
+                let light_pos = Vec3::new(100., 0.0, 0.0);
+                let tri_pos = (tri.tip + tri.base_right + tri.base_left) / 3.;
+                let v1 = tri.tip - tri.base_left;
+                let v2 = tri.tip - tri.base_right;
+                let normal = -v1.cross(v2).normalize();
+                let light_to_tri = (tri_pos - light_pos).normalize();
+                let light_amount = (normal.dot(light_to_tri).clamp(0.0, 1.0)) + diffuse_light;
+
+                tri.draw_down(buffer, grayscale(light_amount))
+            }
             None => (),
         }
     }
