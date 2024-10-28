@@ -13,7 +13,7 @@ pub trait Shape {
 type Vertex = Vec3;
 
 #[derive(Debug)]
-pub struct Triangle {
+pub struct IndexedTriangle {
     /// indices that correspond to vertiecs in Mesh
     pub index: (usize, usize, usize),
     pub color: Color,
@@ -22,7 +22,7 @@ pub struct Triangle {
 #[derive(Debug)]
 pub struct Mesh {
     pub vertices: Vec<Vertex>,
-    pub triangles: Vec<Triangle>,
+    pub triangles: Vec<IndexedTriangle>,
 }
 
 impl Shape for Mesh {
@@ -34,12 +34,13 @@ impl Shape for Mesh {
 
         for triangle in &self.triangles {
             let (t1, t2, t3) = triangle.index;
-            let vert_tri = Tri {
-                v1: transformed_verts[t1],
-                v2: transformed_verts[t2],
-                v3: transformed_verts[t3],
-            };
-            poly::draw_tri(buffer, &vert_tri, triangle.color);
+            let vert_tri = Tri::new(
+                transformed_verts[t1],
+                transformed_verts[t2],
+                transformed_verts[t3],
+                triangle.color,
+            );
+            poly::draw_tri(buffer, &vert_tri);
         }
     }
 }

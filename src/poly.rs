@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use crate::{
     buffer::Buffer,
-    color::{grayscale, Color},
+    color::{grayscale, lit_color, Color},
     interpolate::lerp,
 };
 use glam::{f32::Vec3, Vec3Swizzles};
@@ -11,21 +11,45 @@ pub struct Tri {
     pub v1: Vec3,
     pub v2: Vec3,
     pub v3: Vec3,
+    pub base_color: Color,
+    pub illumination: f32,
+}
+impl Tri {
+    pub fn new(v1: Vec3, v2: Vec3, v3: Vec3, base_color: Color) -> Tri {
+        let diffuse_light = 0.08;
+        let light_pos = Vec3::new(1000.0, -1000.0, 500.0);
+        let tri_pos = (v1 + v2 + v3) / 3.;
+        let cross_1 = v1 - v2;
+        let cross_2 = v3 - v1;
+        let normal = cross_1.cross(cross_2).normalize();
+        let light_to_tri = (tri_pos - light_pos).normalize();
+        let illumination = (normal.dot(light_to_tri).clamp(0.0, 1.0)) + diffuse_light;
+
+        Tri {
+            v1,
+            v2,
+            v3,
+            base_color,
+            illumination,
+        }
+    }
 }
 
-pub fn draw_tri(buffer: &mut Buffer, tri: &Tri, color: Color) {
+pub fn draw_tri(buffer: &mut Buffer, tri: &Tri) {
     let split_triange = SplitTriangle::new(tri);
-    split_triange.draw(buffer, color);
+    split_triange.draw(buffer);
 }
 
 struct UpDownTri {
     tip: Vec3,
     base_left: Vec3,
     base_right: Vec3,
+    base_color: Color,
+    illumination: f32,
 }
 
 impl UpDownTri {
-    fn new(base_1: Vec3, base_2: Vec3, tip: Vec3) -> Self {
+    fn new(base_1: Vec3, base_2: Vec3, tip: Vec3, base_color: Color, illumination: f32) -> Self {
         assert_eq!(base_1.y, base_2.y);
         let (base_left, base_right) = match base_1.x.partial_cmp(&base_2.x) {
             Some(Ordering::Greater) => (base_2, base_1),
@@ -36,10 +60,12 @@ impl UpDownTri {
             tip,
             base_left,
             base_right,
+            base_color,
+            illumination,
         }
     }
 
-    fn draw_up(self, buffer: &mut Buffer, color: Color) {
+    fn draw_up(self, buffer: &mut Buffer) {
         let base_y = self.base_left.y.floor() as i32;
         let tip_y = self.tip.y.ceil() as i32;
         let base_left = self.base_left;
@@ -58,11 +84,11 @@ impl UpDownTri {
                 y,
                 z_next_left,
                 z_next_right,
-                color,
+                lit_color(self.illumination, self.base_color),
             )
         });
     }
-    fn draw_down(self, buffer: &mut Buffer, color: Color) {
+    fn draw_down(self, buffer: &mut Buffer) {
         let base_y = self.base_left.y.ceil() as i32;
         let tip_y = self.tip.y.floor() as i32;
         let base_left = self.base_left;
@@ -81,7 +107,7 @@ impl UpDownTri {
                 y,
                 z_next_left,
                 z_next_right,
-                color,
+                lit_color(self.illumination, self.base_color),
             )
         });
     }
@@ -111,7 +137,13 @@ impl SplitTriangle {
         // check if already up
         if bot_point.y == mid_point.y {
             return SplitTriangle {
-                up_tri: Some(UpDownTri::new(bot_point, mid_point, top_point)),
+                up_tri: Some(UpDownTri::new(
+                    bot_point,
+                    mid_point,
+                    top_point,
+                    tri.base_color,
+                    tri.illumination,
+                )),
                 down_tri: None,
             };
         };
@@ -119,7 +151,13 @@ impl SplitTriangle {
         if top_point.y == mid_point.y {
             return SplitTriangle {
                 up_tri: None,
-                down_tri: Some(UpDownTri::new(top_point, mid_point, bot_point)),
+                down_tri: Some(UpDownTri::new(
+                    top_point,
+                    mid_point,
+                    bot_point,
+                    tri.base_color,
+                    tri.illumination,
+                )),
             };
         };
 
@@ -132,42 +170,25 @@ impl SplitTriangle {
                 mid_point,
                 Vec3::new(new_base_x, new_base_y, new_base_z),
                 top_point,
+                tri.base_color,
+                tri.illumination,
             )),
             down_tri: Some(UpDownTri::new(
                 mid_point,
                 Vec3::new(new_base_x, new_base_y, new_base_z),
                 bot_point,
+                tri.base_color,
+                tri.illumination,
             )),
         }
     }
-    fn draw(self, buffer: &mut Buffer, color: Color) {
-        let diffuse_light = 0.2;
+    fn draw(self, buffer: &mut Buffer) {
         match self.up_tri {
-            Some(tri) => {
-                let light_pos = Vec3::new(100., 0.0, 0.0);
-                let tri_pos = (tri.tip + tri.base_right + tri.base_left) / 3.;
-                let v1 = tri.tip - tri.base_left;
-                let v2 = tri.tip - tri.base_right;
-                let normal = v1.cross(v2).normalize();
-                let light_to_tri = (tri_pos - light_pos).normalize();
-                let light_amount = (normal.dot(light_to_tri).clamp(0.0, 1.0)) + diffuse_light;
-
-                tri.draw_up(buffer, grayscale(light_amount))
-            }
+            Some(tri) => tri.draw_up(buffer),
             None => (),
         }
         match self.down_tri {
-            Some(tri) => {
-                let light_pos = Vec3::new(100., 0.0, 0.0);
-                let tri_pos = (tri.tip + tri.base_right + tri.base_left) / 3.;
-                let v1 = tri.tip - tri.base_left;
-                let v2 = tri.tip - tri.base_right;
-                let normal = -v1.cross(v2).normalize();
-                let light_to_tri = (tri_pos - light_pos).normalize();
-                let light_amount = (normal.dot(light_to_tri).clamp(0.0, 1.0)) + diffuse_light;
-
-                tri.draw_down(buffer, grayscale(light_amount))
-            }
+            Some(tri) => tri.draw_down(buffer),
             None => (),
         }
     }

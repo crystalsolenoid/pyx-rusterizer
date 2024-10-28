@@ -37,7 +37,8 @@ pub enum Color {
 /// Convert a float between 0.0 and 1.0 to a grayscale indexed color.
 /// Overflowing values are white
 pub fn grayscale(value: f32) -> Color {
-    match (value * 8.).floor() as u8 {
+    let scaled = 2.0f32.powf(3.0 * value.clamp(0., 1.));
+    match (scaled).floor() as u8 {
         0 => Color::Black,
         1 => Color::Blue0,
         2 => Color::Blue1,
@@ -47,5 +48,49 @@ pub fn grayscale(value: f32) -> Color {
         6 => Color::Blue5,
         7 => Color::Blue6,
         _ => Color::White,
+    }
+}
+
+/// Convert a float between 0.0 and 1.0 and a color to a lit color
+pub fn lit_color(value: f32, base_color: Color) -> Color {
+    let scaled = 2.0f32.powf(3.0 * value.clamp(0., 1.));
+    match base_color {
+        Color::Red => match (scaled).floor() as u8 {
+            0 => Color::Brown0,
+            1 => Color::Purple,
+            2 => Color::Pink0,
+            3..=6 => Color::Red,
+            7 => Color::Coral,
+            _ => Color::Orange,
+        },
+        Color::White => match (scaled).floor() as u8 {
+            0 => Color::Blue3,
+            1 => Color::Blue4,
+            2 => Color::Blue5,
+            3..6 => Color::Blue6,
+            _ => Color::White,
+        },
+        Color::Black => match (scaled).floor() as u8 {
+            0..=3 => Color::Black,
+            4..=6 => Color::Blue0,
+            _ => Color::Blue1,
+        },
+        Color::Cyan2 => match (scaled).floor() as u8 {
+            0..=1 => Color::Blue2,
+            2..=3 => Color::Cyan1,
+            4..=6 => Color::Cyan2,
+            _ => Color::White,
+        },
+        _ => match (scaled).floor() as u8 {
+            0 => Color::Black,
+            1 => Color::Blue0,
+            2 => Color::Blue1,
+            3 => Color::Blue2,
+            4 => Color::Blue3,
+            5 => Color::Blue4,
+            6 => Color::Blue5,
+            7 => Color::Blue6,
+            _ => Color::White,
+        },
     }
 }

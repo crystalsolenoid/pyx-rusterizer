@@ -4,7 +4,7 @@ use glam::Vec3;
 
 use crate::{
     color::Color,
-    geo::{Mesh, Triangle},
+    geo::{IndexedTriangle, Mesh},
 };
 
 #[derive(Debug)]
@@ -110,16 +110,16 @@ pub fn parse(path: &Path) -> Result<Mesh, Error> {
         .filter_map(|line| match line {
             Line::Face(fs, color) => match fs.len() {
                 0..=2 => panic!(),
-                3 => Some(vec![Triangle {
+                3 => Some(vec![IndexedTriangle {
                     index: (fs[0], fs[1], fs[2]),
                     color: *color,
                 }]),
                 4 => Some(vec![
-                    Triangle {
+                    IndexedTriangle {
                         index: (fs[0], fs[1], fs[2]),
                         color: *color,
                     },
-                    Triangle {
+                    IndexedTriangle {
                         index: (fs[2], fs[3], fs[0]),
                         color: *color,
                     },
@@ -127,7 +127,7 @@ pub fn parse(path: &Path) -> Result<Mesh, Error> {
                 _ => Some(
                     fs[1..]
                         .windows(2)
-                        .map(|window_f| Triangle {
+                        .map(|window_f| IndexedTriangle {
                             index: (fs[0], window_f[0], window_f[1]),
                             color: *color,
                         })
