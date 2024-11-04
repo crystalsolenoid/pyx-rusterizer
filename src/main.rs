@@ -1,10 +1,13 @@
 use glam::{Affine3A, Vec3};
 use minifb::{Key, Window, WindowOptions};
+use serde::Deserialize;
 use std::{
     f32::consts::PI,
+    fs::read_to_string,
     path::Path,
     time::{Duration, Instant},
 };
+use toml;
 
 use pyx_rusterizer::{buffer::Buffer, geo::Geo, obj};
 
@@ -12,13 +15,10 @@ const WIDTH: usize = 80;
 const HEIGHT: usize = 120;
 const SCALING_FACTOR: usize = 5;
 
-// packedRGB values, indexed by paletteIndex
-const PALETTE: [u32; 32] = [
-    0xFF000000, 0xFF00021c, 0xFF1c284d, 0xFF343473, 0xFF2d5280, 0xFF4d7a99, 0xFF7497a6, 0xFFa3ccd9,
-    0xFFf0edd8, 0xFF732866, 0xFFa6216e, 0xFFd94c87, 0xFFd9214f, 0xFFf25565, 0xFFf27961, 0xFF993649,
-    0xFFb36159, 0xFFf09c60, 0xFFb38f24, 0xFFb3b324, 0xFFf7c93e, 0xFF17735f, 0xFF119955, 0xFF67b31b,
-    0xFF1ba683, 0xFF47cca9, 0xFF96e3c9, 0xFF2469b3, 0xFF0b8be6, 0xFF0bafe6, 0xFFf28d85, 0xFFf0bb90,
-];
+#[derive(Deserialize, Debug)]
+struct Palette {
+    colors: [u32; 32],
+}
 
 struct Model {
     cube: Geo,
@@ -58,7 +58,11 @@ struct Timing {
 }
 
 fn main() {
-    let mut buffer = Buffer::new(WIDTH, HEIGHT, PALETTE, SCALING_FACTOR);
+    let pal_path = Path::new("assets/palette.toml");
+    let palette_string = read_to_string(pal_path).unwrap();
+    let palette: Palette = toml::from_str(&palette_string).expect("deserialization failed");
+
+    let mut buffer = Buffer::new(WIDTH, HEIGHT, palette.colors, SCALING_FACTOR);
 
     let mut window = Window::new(
         "Test - ESC to exit",

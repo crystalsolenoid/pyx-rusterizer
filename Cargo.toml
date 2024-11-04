@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 glam = "0.29.0"
 minifb = "0.27.0"
+serde = { version = "1.0.214", features = ["derive"] }
+toml = "0.8.19"

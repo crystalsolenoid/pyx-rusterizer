@@ -1,0 +1,39 @@
+#paint.net Palette File migrated to a .toml for serde
+#Downloaded from Lospec.com/palette-list
+#Palette Name: Jehkoba32
+#Description: Working from my Jehkoba64 palette and trimming down to half as many colours (including transparency), this 32-colour selection is perfect for emulating early SNES-style graphics, with vibrant tones and smooth ramping.&nbsp; Guaranteed to satisfy that retro itch. ♥<br>
+#Colors: 32
+colors = [
+0xFF000000,
+0xFF00021c,
+0xFF1c284d,
+0xFF343473,
+0xFF2d5280,
+0xFF4d7a99,
+0xFF7497a6,
+0xFFa3ccd9,
+0xFFf0edd8,
+0xFF732866,
+0xFFa6216e,
+0xFFd94c87,
+0xFFd9214f,
+0xFFf25565,
+0xFFf27961,
+0xFF993649,
+0xFFb36159,
+0xFFf09c60,
+0xFFb38f24,
+0xFFb3b324,
+0xFFf7c93e,
+0xFF17735f,
+0xFF119955,
+0xFF67b31b,
+0xFF1ba683,
+0xFF47cca9,
+0xFF96e3c9,
+0xFF2469b3,
+0xFF0b8be6,
+0xFF0bafe6,
+0xFFf28d85,
+0xFFf0bb90,
+]
