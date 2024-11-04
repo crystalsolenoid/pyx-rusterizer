@@ -3,21 +3,22 @@ use std::{fs::read_to_string, io::Error, path::Path};
 use glam::Vec3;
 
 use crate::{
-    color::Color,
+    color::{Materials, Material},
     geo::{IndexedTriangle, Mesh},
 };
 
 #[derive(Debug)]
 #[allow(dead_code)]
-enum Line {
+enum Line<'a> {
     ObjectName(String),
     Vertex(f32, f32, f32),
-    Face(Vec<usize>, Color),
-    UseMtl(String, Color), // Color might be removed later
+    Face(Vec<usize>, &'a Material), // &str is a material name
+    UseMtl(String, &'a Material), // Color might be removed later // TODO: clean up: both String?
 }
-pub fn parse(path: &Path) -> Result<Mesh, Error> {
+pub fn parse<'a>(path: &Path, materials: &'a Materials) -> Result<Mesh<'a>, Error> {
     let obj_string = read_to_string(path)?;
-    let mut current_material = Color::Red;
+    let mut current_material = &materials["mat4"];
+//    let mut current_material = &materials.iter().next().unwrap(); // TODO default?
     let data: Vec<_> = obj_string
         .lines()
         .filter_map(|line| {
@@ -80,13 +81,14 @@ pub fn parse(path: &Path) -> Result<Mesh, Error> {
                         .next()
                         .ok_or(Error::other("Missing object name"))
                         .map(|name| {
-                            current_material = match name {
-                                "mat4" => Color::Cyan2,
-                                "mat8" => Color::Red,
-                                "mat21" => Color::White,
-                                "mat23" => Color::Black,
-                                _ => Color::Pink0,
-                            };
+                            current_material = &materials[name];
+//                                match name {
+//                                "mat4" => Color::Cyan2,
+//                                "mat8" => Color::Red,
+//                                "mat21" => Color::White,
+//                                "mat23" => Color::Black,
+//                                _ => Color::Pink0,
+//                            };
                             Line::UseMtl(name.to_string(), current_material)
                         }),
                 ),

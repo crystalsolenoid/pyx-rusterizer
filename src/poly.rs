@@ -2,20 +2,20 @@ use std::cmp::Ordering;
 
 use crate::{
     buffer::Buffer,
-    color::{grayscale, lit_color, Color},
+    color::{Material, lit_color},
     interpolate::lerp,
 };
 use glam::{f32::Vec3, Vec3Swizzles};
 
-pub struct Tri {
+pub struct Tri<'a> {
     pub v1: Vec3,
     pub v2: Vec3,
     pub v3: Vec3,
-    pub base_color: Color,
+    pub base_color: &'a Material,
     pub illumination: f32,
 }
-impl Tri {
-    pub fn new(v1: Vec3, v2: Vec3, v3: Vec3, base_color: Color) -> Tri {
+impl Tri<'_> {
+    pub fn new(v1: Vec3, v2: Vec3, v3: Vec3, base_color: &Material) -> Tri {
         let diffuse_light = 0.08;
         let light_pos = Vec3::new(1000.0, -1000.0, 500.0);
         let tri_pos = (v1 + v2 + v3) / 3.;
@@ -36,20 +36,30 @@ impl Tri {
 }
 
 pub fn draw_tri(buffer: &mut Buffer, tri: &Tri) {
+    let up_tri, down_tri = split_tri(tri);
+    if let up_tri {
+    };
+    if let down_tri {
+    };
+    /*
     let split_triange = SplitTriangle::new(tri);
     split_triange.draw(buffer);
+    */
 }
-
-struct UpDownTri {
+/*
+#[derive(Copy, Clone)]
+struct UpDownTri<'a> {
     tip: Vec3,
     base_left: Vec3,
     base_right: Vec3,
-    base_color: Color,
     illumination: f32,
 }
+*/
 
-impl UpDownTri {
-    fn new(base_1: Vec3, base_2: Vec3, tip: Vec3, base_color: Color, illumination: f32) -> Self {
+/*
+impl<'a> UpDownTri<'a> {
+    fn new(base_1: Vec3, base_2: Vec3, tip: Vec3, base_color: &'a Material, illumination: f32) -> UpDownTri<'a> {
+        // TODO WHY?? lifetimes
         assert_eq!(base_1.y, base_2.y);
         let (base_left, base_right) = match base_1.x.partial_cmp(&base_2.x) {
             Some(Ordering::Greater) => (base_2, base_1),
@@ -107,19 +117,20 @@ impl UpDownTri {
                 y,
                 z_next_left,
                 z_next_right,
-                lit_color(self.illumination, self.base_color),
+                lit_color(self.illumination, self.base_color ),
             )
         });
     }
 }
 
-struct SplitTriangle {
-    up_tri: Option<UpDownTri>,
-    down_tri: Option<UpDownTri>,
+struct SplitTriangle<'a> {
+    up_tri: Option<UpDownTri<'a>>,
+    down_tri: Option<UpDownTri<'a>>,
 }
 
-impl SplitTriangle {
-    fn new(tri: &Tri) -> Self {
+impl SplitTriangle<'_> {
+*/
+    fn split_tri(tri: &Tri) -> (Option(UpDownTri) {
         let mut points = [tri.v1, tri.v2, tri.v3];
         points.sort_by(|t1, t2| t1.y.partial_cmp(&t2.y).unwrap());
         let top_point = points[0];
@@ -182,6 +193,7 @@ impl SplitTriangle {
             )),
         }
     }
+/*
     fn draw(self, buffer: &mut Buffer) {
         match self.up_tri {
             Some(tri) => tri.draw_up(buffer),
@@ -193,3 +205,4 @@ impl SplitTriangle {
         }
     }
 }
+*/

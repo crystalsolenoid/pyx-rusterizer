@@ -2,7 +2,7 @@ use glam::{Affine3A, Vec3};
 
 use crate::{
     buffer::Buffer,
-    color::Color,
+    color::Material,
     poly::{self, Tri},
 };
 
@@ -13,19 +13,19 @@ pub trait Shape {
 type Vertex = Vec3;
 
 #[derive(Debug)]
-pub struct IndexedTriangle {
+pub struct IndexedTriangle<'a> {
     /// indices that correspond to vertiecs in Mesh
     pub index: (usize, usize, usize),
-    pub color: Color,
+    pub color: &'a Material, // TODO change all these to materials
 }
 
 #[derive(Debug)]
-pub struct Mesh {
+pub struct Mesh<'a> {
     pub vertices: Vec<Vertex>,
-    pub triangles: Vec<IndexedTriangle>,
+    pub triangles: Vec<IndexedTriangle<'a>>,
 }
 
-impl Shape for Mesh {
+impl Shape for Mesh<'_> {
     fn render(&self, buffer: &mut Buffer, transform: Affine3A) {
         let transformed_verts: Vec<Vertex> = (&self.vertices)
             .into_iter()

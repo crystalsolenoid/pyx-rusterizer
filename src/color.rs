@@ -1,3 +1,18 @@
+use std::collections::HashMap;
+use serde::Deserialize;
+
+#[derive(Deserialize, Debug)]
+pub struct Palette {
+    pub colors: [u32; 32],
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Material {
+    pub shades: [u8; 9],
+}
+
+pub type Materials = HashMap<String, Material>;
+
 #[derive(Debug, Clone, Copy)]
 pub enum Color {
     Black,
@@ -52,7 +67,13 @@ pub fn grayscale(value: f32) -> Color {
 }
 
 /// Convert a float between 0.0 and 1.0 and a color to a lit color
-pub fn lit_color(value: f32, base_color: Color) -> Color {
+pub fn lit_color(value: f32, base_color: &Material) -> Color {
+    let _scaled = 2.0f32.powf(3.0 * value.clamp(0., 1.));
+    let _shades = base_color.shades;
+    Color::Blue6
+}
+
+pub fn lit_color_old(value: f32, base_color: Color) -> Color {
     let scaled = 2.0f32.powf(3.0 * value.clamp(0., 1.));
     match base_color {
         Color::Red => match (scaled).floor() as u8 {

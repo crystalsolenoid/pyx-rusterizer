@@ -1,6 +1,6 @@
 use glam::{Affine3A, Vec3};
 use minifb::{Key, Window, WindowOptions};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{
     f32::consts::PI,
     fs::read_to_string,
@@ -9,27 +9,39 @@ use std::{
 };
 use toml;
 
-use pyx_rusterizer::{buffer::Buffer, geo::Geo, obj};
+// TODO: use palette for background
+// TODO: stop printing mesh info
+
+use pyx_rusterizer::{
+    color::{Palette, Material, Materials},
+    buffer::Buffer, geo::Geo, obj
+};
 
 const WIDTH: usize = 80;
 const HEIGHT: usize = 120;
 const SCALING_FACTOR: usize = 5;
 
-#[derive(Deserialize, Debug)]
-struct Palette {
-    colors: [u32; 32],
+struct Scene {
+    palette: Palette,
 }
 
 struct Model {
     cube: Geo,
+    materials: Materials,
 }
 
 impl Model {
     fn new() -> Self {
-        let obj = obj::parse(Path::new("assets/porygon/model.obj")).unwrap();
+        let mat_path = Path::new("assets/porygon/materials.toml");
+        let mat_string = read_to_string(mat_path).unwrap();
+        let materials: Materials = toml::from_str(&mat_string)
+            .expect("deserialization failed");
+
+        let obj = obj::parse(Path::new("assets/porygon/model.obj"), &materials).unwrap();
         println!("{:?}", obj);
         Model {
             cube: Geo::new(Box::new(obj), Affine3A::IDENTITY),
+            materials,
         }
     }
 }
@@ -60,7 +72,8 @@ struct Timing {
 fn main() {
     let pal_path = Path::new("assets/palette.toml");
     let palette_string = read_to_string(pal_path).unwrap();
-    let palette: Palette = toml::from_str(&palette_string).expect("deserialization failed");
+    let palette: Palette = toml::from_str(&palette_string)
+        .expect("deserialization failed");
 
     let mut buffer = Buffer::new(WIDTH, HEIGHT, palette.colors, SCALING_FACTOR);
 
