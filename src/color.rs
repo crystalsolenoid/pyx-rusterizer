@@ -1,17 +1,19 @@
-use std::collections::HashMap;
 use serde::Deserialize;
+use std::collections::HashMap;
 
 #[derive(Deserialize, Debug)]
 pub struct Palette {
     pub colors: [u32; 32],
 }
 
-#[derive(Deserialize, Debug)]
+/// TODO: don't clone/copy this
+#[derive(Deserialize, Debug, Clone, Copy)]
 pub struct Material {
     pub shades: [u8; 9],
 }
 
-pub type Materials = HashMap<String, Material>;
+pub type NamedMaterials = HashMap<String, Material>;
+pub type Materials = Vec<Material>;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Color {
@@ -67,10 +69,12 @@ pub fn grayscale(value: f32) -> Color {
 }
 
 /// Convert a float between 0.0 and 1.0 and a color to a lit color
-pub fn lit_color(value: f32, base_color: &Material) -> Color {
-    let _scaled = 2.0f32.powf(3.0 * value.clamp(0., 1.));
-    let _shades = base_color.shades;
-    Color::Blue6
+pub fn lit_color(value: f32, base_color: Material) -> Color {
+    let scaled = 2.0f32.powf(3.0 * value.clamp(0., 1.));
+    let index = scaled.floor() as usize;
+    let shades = base_color.shades;
+    //shades[index]
+    Color::Blue1
 }
 
 pub fn lit_color_old(value: f32, base_color: Color) -> Color {

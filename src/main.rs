@@ -13,8 +13,10 @@ use toml;
 // TODO: stop printing mesh info
 
 use pyx_rusterizer::{
-    color::{Palette, Material, Materials},
-    buffer::Buffer, geo::Geo, obj
+    buffer::Buffer,
+    color::{Material, NamedMaterials, Palette},
+    geo::Geo,
+    obj,
 };
 
 const WIDTH: usize = 80;
@@ -27,21 +29,19 @@ struct Scene {
 
 struct Model {
     cube: Geo,
-    materials: Materials,
 }
 
 impl Model {
-    fn new() -> Self {
+    fn new() -> Model {
         let mat_path = Path::new("assets/porygon/materials.toml");
         let mat_string = read_to_string(mat_path).unwrap();
-        let materials: Materials = toml::from_str(&mat_string)
-            .expect("deserialization failed");
+        let named_materials: NamedMaterials =
+            toml::from_str(&mat_string).expect("deserialization failed");
 
-        let obj = obj::parse(Path::new("assets/porygon/model.obj"), &materials).unwrap();
-        println!("{:?}", obj);
+        let mesh = obj::parse(Path::new("assets/porygon/model.obj"), named_materials).unwrap();
+        println!("{:?}", mesh);
         Model {
-            cube: Geo::new(Box::new(obj), Affine3A::IDENTITY),
-            materials,
+            cube: Geo::new(mesh, Affine3A::IDENTITY),
         }
     }
 }
@@ -72,8 +72,7 @@ struct Timing {
 fn main() {
     let pal_path = Path::new("assets/palette.toml");
     let palette_string = read_to_string(pal_path).unwrap();
-    let palette: Palette = toml::from_str(&palette_string)
-        .expect("deserialization failed");
+    let palette: Palette = toml::from_str(&palette_string).expect("deserialization failed");
 
     let mut buffer = Buffer::new(WIDTH, HEIGHT, palette.colors, SCALING_FACTOR);
 

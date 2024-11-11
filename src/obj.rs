@@ -1,24 +1,34 @@
-use std::{fs::read_to_string, io::Error, path::Path};
+use std::{collections::HashMap, fs::read_to_string, io::Error, path::Path};
 
 use glam::Vec3;
 
 use crate::{
-    color::{Materials, Material},
+    color::NamedMaterials,
     geo::{IndexedTriangle, Mesh},
 };
 
 #[derive(Debug)]
 #[allow(dead_code)]
-enum Line<'a> {
+enum Line {
     ObjectName(String),
     Vertex(f32, f32, f32),
-    Face(Vec<usize>, &'a Material), // &str is a material name
-    UseMtl(String, &'a Material), // Color might be removed later // TODO: clean up: both String?
+    Face(Vec<usize>, String), // &str is a material name
+    UseMtl(String, String),   // Color might be removed later // TODO: clean up: both String?
 }
-pub fn parse<'a>(path: &Path, materials: &'a Materials) -> Result<Mesh<'a>, Error> {
+pub fn parse(path: &Path, named_materials: NamedMaterials) -> Result<Mesh, Error> {
     let obj_string = read_to_string(path)?;
-    let mut current_material = &materials["mat4"];
-//    let mut current_material = &materials.iter().next().unwrap(); // TODO default?
+
+    let materials: Vec<_> = named_materials.clone().into_values().collect();
+
+    let material_references: HashMap<String, usize> = named_materials
+        .clone()
+        .into_keys()
+        .enumerate()
+        .map(|(i, v)| (v, i))
+        .collect();
+
+    let mut current_material_name = "".to_string();
+    //    let mut current_material = &materials.iter().next().unwrap(); // TODO default?
     let data: Vec<_> = obj_string
         .lines()
         .filter_map(|line| {
@@ -66,7 +76,7 @@ pub fn parse<'a>(path: &Path, materials: &'a Materials) -> Result<Mesh<'a>, Erro
                         })
                         .collect::<Result<Vec<_>, _>>()
                         .and_then(|fs| match fs.len() {
-                            3.. => Ok(Line::Face(fs, current_material)),
+                            3.. => Ok(Line::Face(fs, current_material_name.clone())),
                             _ => Err(Error::other(std::format!(
                                 "Expected 3 or more vertex indices, found {fs:?}"
                             ))),
@@ -81,15 +91,15 @@ pub fn parse<'a>(path: &Path, materials: &'a Materials) -> Result<Mesh<'a>, Erro
                         .next()
                         .ok_or(Error::other("Missing object name"))
                         .map(|name| {
-                            current_material = &materials[name];
-//                                match name {
-//                                "mat4" => Color::Cyan2,
-//                                "mat8" => Color::Red,
-//                                "mat21" => Color::White,
-//                                "mat23" => Color::Black,
-//                                _ => Color::Pink0,
-//                            };
-                            Line::UseMtl(name.to_string(), current_material)
+                            current_material_name = name.to_string();
+                            //                                match name {
+                            //                                "mat4" => Color::Cyan2,
+                            //                                "mat8" => Color::Red,
+                            //                                "mat21" => Color::White,
+                            //                                "mat23" => Color::Black,
+                            //                                _ => Color::Pink0,
+                            //                            };
+                            Line::UseMtl(name.to_string(), current_material_name.clone())
                         }),
                 ),
                 Some("mtllib") => None, // Not sure what this is!
@@ -110,20 +120,20 @@ pub fn parse<'a>(path: &Path, materials: &'a Materials) -> Result<Mesh<'a>, Erro
     let triangles = data
         .iter()
         .filter_map(|line| match line {
-            Line::Face(fs, color) => match fs.len() {
+            Line::Face(fs, material_name) => match fs.len() {
                 0..=2 => panic!(),
                 3 => Some(vec![IndexedTriangle {
                     index: (fs[0], fs[1], fs[2]),
-                    color: *color,
+                    color: materials[material_references[material_name]],
                 }]),
                 4 => Some(vec![
                     IndexedTriangle {
                         index: (fs[0], fs[1], fs[2]),
-                        color: *color,
+                        color: materials[material_references[material_name]],
                     },
                     IndexedTriangle {
                         index: (fs[2], fs[3], fs[0]),
-                        color: *color,
+                        color: materials[material_references[material_name]],
                     },
                 ]),
                 _ => Some(
@@ -131,7 +141,7 @@ pub fn parse<'a>(path: &Path, materials: &'a Materials) -> Result<Mesh<'a>, Erro
                         .windows(2)
                         .map(|window_f| IndexedTriangle {
                             index: (fs[0], window_f[0], window_f[1]),
-                            color: *color,
+                            color: materials[material_references[material_name]],
                         })
                         .collect::<Vec<_>>(),
                 ),
@@ -142,6 +152,7 @@ pub fn parse<'a>(path: &Path, materials: &'a Materials) -> Result<Mesh<'a>, Erro
         .collect();
 
     Ok(Mesh {
+        materials,
         triangles,
         vertices,
     })
