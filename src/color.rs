@@ -1,9 +1,17 @@
+use assets_manager::{loader, Asset};
 use serde::Deserialize;
 use std::collections::HashMap;
 
 #[derive(Deserialize, Debug)]
 pub struct Palette {
     pub colors: [u32; 32],
+}
+impl Asset for Palette {
+    // The extension of the files to look into
+    const EXTENSION: &'static str = "toml";
+
+    // The serialization format (RON)
+    type Loader = loader::TomlLoader;
 }
 
 /// TODO: don't clone/copy this

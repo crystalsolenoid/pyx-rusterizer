@@ -1,3 +1,4 @@
+use assets_manager::AssetCache;
 use glam::{Affine3A, Vec3};
 use minifb::{Key, Window, WindowOptions};
 use serde::{Deserialize, Serialize};
@@ -70,9 +71,10 @@ struct Timing {
 }
 
 fn main() {
-    let pal_path = Path::new("assets/palette.toml");
-    let palette_string = read_to_string(pal_path).unwrap();
-    let palette: Palette = toml::from_str(&palette_string).expect("deserialization failed");
+    let cache = AssetCache::new("assets").unwrap();
+    let handle = cache.load::<Palette>("palette").unwrap();
+
+    let palette = handle.read();
 
     let mut buffer = Buffer::new(WIDTH, HEIGHT, palette.colors, SCALING_FACTOR);
 
