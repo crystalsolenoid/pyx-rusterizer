@@ -77,12 +77,11 @@ pub fn grayscale(value: f32) -> Color {
 }
 
 /// Convert a float between 0.0 and 1.0 and a color to a lit color
-pub fn lit_color(value: f32, base_color: Material) -> Color {
+pub fn lit_color(value: f32, base_color: Material) -> u8 {
     let scaled = 2.0f32.powf(3.0 * value.clamp(0., 1.));
     let index = scaled.floor() as usize;
     let shades = base_color.shades;
-    //shades[index]
-    Color::Blue1
+    shades[index]
 }
 
 pub fn lit_color_old(value: f32, base_color: Color) -> Color {
