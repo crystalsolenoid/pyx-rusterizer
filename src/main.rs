@@ -74,9 +74,12 @@ fn main() {
     let cache = AssetCache::new("assets").unwrap();
     let handle = cache.load::<Palette>("palette").unwrap();
 
-    let palette = handle.read();
+    let mut buffer: Buffer;
+    {
+        let palette = handle.read();
 
-    let mut buffer = Buffer::new(WIDTH, HEIGHT, palette.colors, SCALING_FACTOR);
+        buffer = Buffer::new(WIDTH, HEIGHT, palette.colors, SCALING_FACTOR);
+    }
 
     let mut window = Window::new(
         "Test - ESC to exit",
@@ -98,6 +101,8 @@ fn main() {
     let mut timing;
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
+        cache.hot_reload();
+        println!("Current value: {:?}", handle.read());
         draw(&mut buffer, &model);
 
         timing = Timing {
