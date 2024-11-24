@@ -24,7 +24,7 @@ pub struct Buffer {
     /// unscaled height
     height: usize,
     /// map color indicies to u32 rgb values
-    palette: [u32; COLOR_DEPTH as usize],
+    pub palette: [u32; COLOR_DEPTH as usize],
 
     /// User controlled, screen buffer, holding color palette indices
     /// Length is `width * height` (not scaled by `scale`)

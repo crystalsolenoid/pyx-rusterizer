@@ -3,6 +3,7 @@ use glam::{Affine3A, Vec3};
 use minifb::{Key, Window, WindowOptions};
 use serde::{Deserialize, Serialize};
 use std::{
+    borrow::Borrow,
     f32::consts::PI,
     fs::read_to_string,
     path::Path,
@@ -15,7 +16,7 @@ use toml;
 
 use pyx_rusterizer::{
     buffer::Buffer,
-    color::{Material, NamedMaterials, Palette},
+    color::{Material, Materials, NamedMaterials, Palette},
     geo::Geo,
     obj,
 };
@@ -72,11 +73,12 @@ struct Timing {
 
 fn main() {
     let cache = AssetCache::new("assets").unwrap();
-    let handle = cache.load::<Palette>("palette").unwrap();
+    let palette_handle = cache.load::<Palette>("palette").unwrap();
+    let material_handle = cache.load::<NamedMaterials>("porygon/materials").unwrap();
 
     let mut buffer: Buffer;
     {
-        let palette = handle.read();
+        let palette = palette_handle.read();
 
         buffer = Buffer::new(WIDTH, HEIGHT, palette.colors, SCALING_FACTOR);
     }
@@ -102,7 +104,10 @@ fn main() {
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
         cache.hot_reload();
-        println!("Current value: {:?}", handle.read());
+        buffer.palette = palette_handle.read().colors;
+        //TODO: figure out how to get Materials out of the AssetReadGuard without cloning
+        model.cube.shape.materials = material_handle.read().clone().into();
+
         draw(&mut buffer, &model);
 
         timing = Timing {

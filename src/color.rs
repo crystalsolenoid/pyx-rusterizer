@@ -2,16 +2,10 @@ use assets_manager::{loader, Asset};
 use serde::Deserialize;
 use std::collections::HashMap;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Asset)]
+#[asset_format = "toml"]
 pub struct Palette {
     pub colors: [u32; 32],
-}
-impl Asset for Palette {
-    // The extension of the files to look into
-    const EXTENSION: &'static str = "toml";
-
-    // The serialization format (RON)
-    type Loader = loader::TomlLoader;
 }
 
 /// TODO: don't clone/copy this
@@ -20,8 +14,22 @@ pub struct Material {
     pub shades: [u8; 9],
 }
 
-pub type NamedMaterials = HashMap<String, Material>;
-pub type Materials = Vec<Material>;
+#[derive(Deserialize, Debug, Clone, Asset)]
+#[asset_format = "toml"]
+#[serde(transparent)]
+pub struct NamedMaterials(pub HashMap<String, Material>);
+
+#[derive(Debug)]
+pub struct Materials(pub Vec<Material>);
+
+impl From<NamedMaterials> for Materials {
+    fn from(value: NamedMaterials) -> Self {
+        let mut unsorted_materials = value.0.clone().into_iter().collect::<Vec<_>>();
+        // Using a manual sort_by_key here, to satisfy lifetime weirdness
+        unsorted_materials.sort_by(|x, y| x.0.cmp(&(y.0)));
+        Materials(unsorted_materials.into_iter().map(|(_k, v)| v).collect())
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 pub enum Color {

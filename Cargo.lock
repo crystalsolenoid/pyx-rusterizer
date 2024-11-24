@@ -22,12 +22,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ace748e030e290ec2f9b634f65f77089b7c552265ebc8be9236ec382e2ae71e9"
 dependencies = [
  "ahash",
+ "assets_manager_macros",
  "basic-toml",
  "crossbeam-channel",
  "hashbrown",
  "log",
  "notify",
  "serde",
+]
+
+[[package]]
+name = "assets_manager_macros"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a88f1019c5c50db18b9122f08c89ac6d396074fbb8ddd8816dc29c65df8dd01a"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
