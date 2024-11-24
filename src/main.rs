@@ -1,6 +1,5 @@
 use assets_manager::{AssetCache, Handle};
 use glam::{Affine3A, Vec3};
-use log::{debug, error};
 use minifb::{Key, Window, WindowOptions};
 use std::{
     f32::consts::PI,
