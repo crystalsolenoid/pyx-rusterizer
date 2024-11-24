@@ -1,4 +1,4 @@
-use assets_manager::{loader, Asset};
+use assets_manager::Asset;
 use serde::Deserialize;
 use std::collections::HashMap;
 

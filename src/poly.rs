@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use crate::{
     buffer::Buffer,
-    color::{lit_color, Material, Palette},
+    color::{lit_color, Material},
     interpolate::lerp,
 };
 use glam::{f32::Vec3, Vec3Swizzles};

@@ -126,16 +126,16 @@ pub fn parse(path: &Path, named_materials: NamedMaterials) -> Result<Mesh, Error
                 0..=2 => panic!(),
                 3 => Some(vec![IndexedTriangle {
                     index: (fs[0], fs[1], fs[2]),
-                    color: materials.0[material_references[material_name]],
+                    material_index: material_references[material_name],
                 }]),
                 4 => Some(vec![
                     IndexedTriangle {
                         index: (fs[0], fs[1], fs[2]),
-                        color: materials.0[material_references[material_name]],
+                        material_index: material_references[material_name],
                     },
                     IndexedTriangle {
                         index: (fs[2], fs[3], fs[0]),
-                        color: materials.0[material_references[material_name]],
+                        material_index: material_references[material_name],
                     },
                 ]),
                 _ => Some(
@@ -143,7 +143,7 @@ pub fn parse(path: &Path, named_materials: NamedMaterials) -> Result<Mesh, Error
                         .windows(2)
                         .map(|window_f| IndexedTriangle {
                             index: (fs[0], window_f[0], window_f[1]),
-                            color: materials.0[material_references[material_name]],
+                            material_index: material_references[material_name],
                         })
                         .collect::<Vec<_>>(),
                 ),

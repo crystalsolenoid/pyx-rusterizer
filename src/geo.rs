@@ -2,7 +2,7 @@ use glam::{Affine3A, Vec3};
 
 use crate::{
     buffer::Buffer,
-    color::{Material, Materials},
+    color::Materials,
     poly::{self, Tri},
 };
 
@@ -16,7 +16,7 @@ type Vertex = Vec3;
 pub struct IndexedTriangle {
     /// indices that correspond to vertiecs in Mesh
     pub index: (usize, usize, usize),
-    pub color: Material, // TODO change all these to materials
+    pub material_index: usize,
 }
 
 #[derive(Debug)]
@@ -39,7 +39,7 @@ impl Shape for Mesh {
                 transformed_verts[t1],
                 transformed_verts[t2],
                 transformed_verts[t3],
-                triangle.color,
+                self.materials.0[triangle.material_index],
             );
             poly::draw_tri(buffer, &vert_tri);
         }

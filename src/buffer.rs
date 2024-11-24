@@ -2,10 +2,7 @@ use core::f32;
 
 use glam::Vec2;
 
-use crate::{
-    color::Color,
-    interpolate::{lerp, LerpIter},
-};
+use crate::interpolate::{lerp, LerpIter};
 
 /// u8 value, because that is the biggest that will fit into palette_pixels
 const COLOR_DEPTH: u8 = 32;

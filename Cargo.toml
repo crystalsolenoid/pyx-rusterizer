@@ -7,7 +7,9 @@ edition = "2021"
 
 [dependencies]
 assets_manager = { version = "0.12.4", features = ["hot-reloading", "macros", "toml"] }
+env_logger = "0.11.5"
 glam = "0.29.0"
+log = "0.4.22"
 minifb = "0.27.0"
 serde = { version = "1.0.214", features = ["derive"] }
 toml = "0.8.19"

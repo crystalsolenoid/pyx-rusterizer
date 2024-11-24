@@ -1,22 +1,19 @@
-use assets_manager::AssetCache;
+use assets_manager::{AssetCache, Handle};
 use glam::{Affine3A, Vec3};
+use log::{debug, error};
 use minifb::{Key, Window, WindowOptions};
-use serde::{Deserialize, Serialize};
 use std::{
-    borrow::Borrow,
     f32::consts::PI,
-    fs::read_to_string,
     path::Path,
     time::{Duration, Instant},
 };
-use toml;
 
 // TODO: use palette for background
 // TODO: stop printing mesh info
 
 use pyx_rusterizer::{
     buffer::Buffer,
-    color::{Material, Materials, NamedMaterials, Palette},
+    color::{NamedMaterials, Palette},
     geo::Geo,
     obj,
 };
@@ -25,20 +22,13 @@ const WIDTH: usize = 80;
 const HEIGHT: usize = 120;
 const SCALING_FACTOR: usize = 5;
 
-struct Scene {
-    palette: Palette,
-}
-
 struct Model {
     cube: Geo,
 }
 
 impl Model {
-    fn new() -> Model {
-        let mat_path = Path::new("assets/porygon/materials.toml");
-        let mat_string = read_to_string(mat_path).unwrap();
-        let named_materials: NamedMaterials =
-            toml::from_str(&mat_string).expect("deserialization failed");
+    fn new(material_handle: &Handle<NamedMaterials>) -> Model {
+        let named_materials: NamedMaterials = NamedMaterials(material_handle.read().0.clone());
 
         let mesh = obj::parse(Path::new("assets/porygon/model.obj"), named_materials).unwrap();
         println!("{:?}", mesh);
@@ -72,9 +62,11 @@ struct Timing {
 }
 
 fn main() {
+    env_logger::init();
+
     let cache = AssetCache::new("assets").unwrap();
     let palette_handle = cache.load::<Palette>("palette").unwrap();
-    let material_handle = cache.load::<NamedMaterials>("porygon/materials").unwrap();
+    let material_handle = cache.load::<NamedMaterials>("porygon.materials").unwrap();
 
     let mut buffer: Buffer;
     {
@@ -96,7 +88,7 @@ fn main() {
     // Limit to max ~60 fps update rate
     window.set_target_fps(60);
 
-    let mut model = Model::new();
+    let mut model = Model::new(material_handle);
 
     let start_instant = Instant::now();
     let mut last_frame_instant = Instant::now();
@@ -106,7 +98,7 @@ fn main() {
         cache.hot_reload();
         buffer.palette = palette_handle.read().colors;
         //TODO: figure out how to get Materials out of the AssetReadGuard without cloning
-        model.cube.shape.materials = material_handle.read().clone().into();
+        model.cube.shape.materials = NamedMaterials(material_handle.read().0.clone()).into();
 
         draw(&mut buffer, &model);
 
