@@ -25,7 +25,7 @@ pub struct Buffer {
 
     /// User controlled, screen buffer, holding color palette indices
     /// Length is `width * height` (not scaled by `scale`)
-    canvas: Vec<u8>,
+    pub canvas: Vec<u8>,
     z_buffer: Vec<f32>,
 
     /// API Controlled screen buffer holding u32 values that represent rgb values
