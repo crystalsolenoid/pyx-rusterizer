@@ -8,6 +8,7 @@ use crate::interpolate::{lerp, LerpIter};
 const COLOR_DEPTH: u8 = 32;
 //TODO: create a type for indexed colors
 
+const CLEAR_COLOR: u8 = 0;
 /// Contains the current frames data both as both
 ///
 /// `canvas`: unscaled, indexed colored mode
@@ -31,7 +32,7 @@ pub struct Buffer {
     /// API Controlled screen buffer holding u32 values that represent rgb values
     /// Length is `(width  * scale) * (height * scale)`
     /// Always kept in sync with `canvas`
-    rgb_pixels: Vec<u32>,
+    rgb_pixels: Vec<u32>, // TODO turn into [u8;4]?
     scale: usize,
 }
 
@@ -47,9 +48,9 @@ impl Buffer {
             width,
             height,
             palette,
-            canvas: vec![0; width * height],
+            canvas: vec![CLEAR_COLOR; width * height],
             z_buffer: vec![f32::NEG_INFINITY; width * height],
-            rgb_pixels: vec![palette[0]; (width * scale) * (height * scale)],
+            rgb_pixels: vec![palette[CLEAR_COLOR as usize]; (width * scale) * (height * scale)],
 
             scale,
         }
@@ -70,7 +71,7 @@ impl Buffer {
     pub fn clear_screen(&mut self) {
         self.canvas.fill(0);
         self.z_buffer.fill(f32::NEG_INFINITY);
-        self.rgb_pixels.fill(0);
+        self.rgb_pixels.fill(self.palette[CLEAR_COLOR as usize]);
     }
     /// sets an indexed color at `x`,`y`
     pub fn pix(&mut self, x: i32, y: i32, color: u8) {

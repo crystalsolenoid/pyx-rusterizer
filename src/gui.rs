@@ -1,3 +1,4 @@
+use num_traits::ToBytes;
 use std::time::{Duration, Instant};
 
 use icecube::button::Button;
@@ -10,6 +11,7 @@ use icecube::{col, row};
 
 use crate::animation::{self, Timing};
 use crate::buffer::Buffer;
+use crate::constants::{HEIGHT, WIDTH};
 use crate::model::{draw, Model};
 
 #[derive(Debug, Copy, Clone)]
@@ -74,23 +76,20 @@ fn render(duration: Duration, state: &mut State) {
 }
 
 pub fn view(state: &State) -> Node<Message, Layout> {
-    let render = state
+    // TODO just store a [u8; 4] in buffer instead of u32?
+    let render: Vec<[u8; 4]> = state
         .buffer
-        .canvas
+        .rgb_pixels()
         .clone()
         .into_iter()
-        .map(|px| match px {
-            0 => 0,
-            1..4 => 1,
-            4..8 => 2,
-            8.. => 3,
-        } as usize)
+        .map(|px| ToBytes::to_be_bytes(&px))
         .collect();
 
-    let image =
-        Node::new(Image::new(render, state.buffer.width(), state.buffer.height()).scale_factor(2))
-            .height(Length::Shrink)
-            .width(Length::Shrink);
+    let image = Node::new(
+        Image::<[u8; 4]>::new(render, state.buffer.width(), state.buffer.height()).scale_factor(2),
+    )
+    .height(Length::Shrink)
+    .width(Length::Shrink);
 
     let mut button = Node::new(Button::new().on_press(Message::Invert))
         .height(Length::Shrink)

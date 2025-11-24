@@ -12,5 +12,6 @@ glam = "0.29.0"
 icecube = { git = "https://github.com/crystalsolenoid/icecube", version = "0.1.0" }
 log = "0.4.22"
 minifb = "0.27.0"
+num-traits = "0.2.19"
 serde = { version = "1.0.214", features = ["derive"] }
 toml = "0.8.19"
