@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use icecube::button::Button;
 use icecube::image::Image;
 use icecube::layout::{Layout, Length};
@@ -6,18 +8,21 @@ use icecube::quad::Quad;
 use icecube::tree::Node;
 use icecube::{col, row};
 
+use crate::animation::{self, Timing};
 use crate::buffer::Buffer;
-use crate::model::Model;
+use crate::model::{draw, Model};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Message {
     Invert,
+    TimeElapsed(Duration),
 }
 
 pub struct State {
     data: Vec<usize>,
     model: Model,
     buffer: Buffer,
+    start_instant: Instant,
 }
 
 impl State {
@@ -26,6 +31,7 @@ impl State {
             data: vec![0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
             model,
             buffer,
+            start_instant: Instant::now(),
         }
     }
 }
@@ -47,7 +53,24 @@ impl State {
 pub fn update(m: Message, state: &mut State) {
     match m {
         Message::Invert => state.invert(),
+        Message::TimeElapsed(duration) => render(duration, state),
     }
+}
+
+fn render(duration: Duration, state: &mut State) {
+    // cache.hot_reload(); // TODO turn back on?
+    // buffer.palette = palette_handle.read().colors;
+    //TODO: figure out how to get Materials out of the AssetReadGuard without cloning
+    // model.cube.shape.materials = NamedMaterials(material_handle.read().0.clone()).into();
+
+    draw(&mut state.buffer, &state.model);
+
+    let timing = Timing {
+        time_since_start: Instant::now() - state.start_instant,
+        _delta: duration.as_secs_f32(),
+    };
+
+    animation::update(timing, &mut state.model);
 }
 
 pub fn view(state: &State) -> Node<Message, Layout> {
@@ -65,7 +88,7 @@ pub fn view(state: &State) -> Node<Message, Layout> {
         .collect();
 
     let image =
-        Node::new(Image::new(render, state.buffer.width(), state.buffer.height()).scale_factor(1))
+        Node::new(Image::new(render, state.buffer.width(), state.buffer.height()).scale_factor(2))
             .height(Length::Shrink)
             .width(Length::Shrink);
 

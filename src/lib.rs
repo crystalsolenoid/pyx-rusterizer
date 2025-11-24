@@ -1,5 +1,7 @@
+pub mod animation;
 pub mod buffer;
 pub mod color;
+pub mod constants;
 pub mod geo;
 pub mod gui;
 pub mod interpolate;

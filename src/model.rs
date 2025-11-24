@@ -3,7 +3,7 @@ use std::path::Path;
 use assets_manager::Handle;
 use glam::Affine3A;
 
-use crate::{color::NamedMaterials, geo::Geo, obj};
+use crate::{buffer::Buffer, color::NamedMaterials, geo::Geo, obj};
 
 pub struct Model {
     pub cube: Geo,
@@ -18,4 +18,11 @@ impl Model {
             cube: Geo::new(mesh, Affine3A::IDENTITY),
         }
     }
+}
+
+/// called every frame
+pub fn draw(buffer: &mut Buffer, model: &Model) {
+    buffer.clear_screen();
+
+    model.cube.render(buffer);
 }
