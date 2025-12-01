@@ -8,13 +8,13 @@ use crate::{
 };
 
 /// called every tick
-pub fn update(timing: Timing, model: &mut Model) {
-    let t = timing.time_since_start.as_secs_f32();
+pub fn update(radians: f32, model: &mut Model) {
+    // let t = timing.time_since_start.as_secs_f32();
 
     model.cube.transform =
         Affine3A::from_translation(Vec3::new(WIDTH as f32 / 2., HEIGHT as f32 / 2., 0.))
             * Affine3A::from_rotation_x(PI + 0.01)
-            * Affine3A::from_rotation_y(-t * PI / 3.)
+            * Affine3A::from_rotation_y(radians)
             * Affine3A::from_scale(Vec3::splat(50.));
 }
 

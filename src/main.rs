@@ -1,24 +1,15 @@
-use assets_manager::{AssetCache, Handle};
-use glam::{Affine3A, Vec3};
-use minifb::{Key, Window, WindowOptions};
-use std::{
-    f32::consts::PI,
-    path::Path,
-    time::{Duration, Instant},
-};
+use assets_manager::AssetCache;
+use num_traits::ToBytes;
 
 // TODO: use palette for background
 // TODO: stop printing mesh info
 
 use pyx_rusterizer::{
-    animation::Timing,
     buffer::Buffer,
     color::{NamedMaterials, Palette},
     constants::{HEIGHT, SCALING_FACTOR, WIDTH},
-    geo::Geo,
     gui,
-    model::{draw, Model},
-    obj,
+    model::Model,
 };
 
 fn main() {
@@ -52,9 +43,9 @@ fn main() {
 
     let mut model = Model::new(material_handle);
 
-    let start_instant = Instant::now();
-    let mut last_frame_instant = Instant::now();
-    let mut timing: Timing;
+    // let start_instant = Instant::now();
+    // let mut last_frame_instant = Instant::now();
+    // let mut timing: Timing;
 
     cache.hot_reload();
     buffer.palette = palette_handle.read().colors;
@@ -68,9 +59,10 @@ fn main() {
         gui::view,
         320,
         240,
-        icecube::palette::MAIN_DARK,
+        ToBytes::to_be_bytes(&palette_handle.read().colors[0]),
         |d| Some(gui::Message::TimeElapsed(d)),
-    );
+    )
+    .unwrap();
     /*
     while window.is_open() && !window.is_key_down(Key::Escape) {
         cache.hot_reload();

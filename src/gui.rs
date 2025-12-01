@@ -1,23 +1,24 @@
+use icecube::palette::{Color, BLUE_DARK, BLUE_LIGHT};
+use icecube::quad::Quad;
+use icecube::text::Text;
 use num_traits::ToBytes;
 use std::time::{Duration, Instant};
 
 use icecube::button::Button;
 use icecube::image::Image;
 use icecube::layout::{Layout, Length};
-use icecube::palette::MAIN_LIGHT;
-use icecube::quad::Quad;
 use icecube::tree::Node;
-use icecube::{col, row};
+use icecube::{col, font, row};
 
 use crate::animation::{self, Timing};
 use crate::buffer::Buffer;
-use crate::constants::{HEIGHT, WIDTH};
 use crate::model::{draw, Model};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Message {
     Invert,
     TimeElapsed(Duration),
+    Rotate(f32),
 }
 
 pub struct State {
@@ -25,6 +26,7 @@ pub struct State {
     model: Model,
     buffer: Buffer,
     start_instant: Instant,
+    rotation: f32,
 }
 
 impl State {
@@ -34,6 +36,7 @@ impl State {
             model,
             buffer,
             start_instant: Instant::now(),
+            rotation: 0.0,
         }
     }
 }
@@ -53,9 +56,10 @@ impl State {
 }
 
 pub fn update(m: Message, state: &mut State) {
-    match m {
+    match dbg!(m) {
         Message::Invert => state.invert(),
         Message::TimeElapsed(duration) => render(duration, state),
+        Message::Rotate(radians) => state.rotation += radians,
     }
 }
 
@@ -67,12 +71,12 @@ fn render(duration: Duration, state: &mut State) {
 
     draw(&mut state.buffer, &state.model);
 
-    let timing = Timing {
-        time_since_start: Instant::now() - state.start_instant,
-        _delta: duration.as_secs_f32(),
-    };
+    // let timing = Timing {
+    //     time_since_start: Instant::now() - state.start_instant,
+    //     _delta: duration.as_secs_f32(),
+    // };
 
-    animation::update(timing, &mut state.model);
+    animation::update(state.rotation, &mut state.model);
 }
 
 pub fn view(state: &State) -> Node<Message, Layout> {
@@ -91,19 +95,66 @@ pub fn view(state: &State) -> Node<Message, Layout> {
     .height(Length::Shrink)
     .width(Length::Shrink);
 
-    let mut button = Node::new(Button::new().on_press(Message::Invert))
-        .height(Length::Shrink)
-        .width(Length::Shrink);
-    button.push(image);
+    let fill_color = ToBytes::to_be_bytes(&state.buffer.palette[1]);
+    let border_color = ToBytes::to_be_bytes(&state.buffer.palette[2]);
+    let text_color = ToBytes::to_be_bytes(&state.buffer.palette[15]);
+    let left_button = make_button(
+        "<-".to_string(),
+        Message::Rotate(0.05),
+        fill_color,
+        border_color,
+        text_color,
+    );
+    let right_button = make_button(
+        "->".to_string(),
+        Message::Rotate(-0.05),
+        fill_color,
+        border_color,
+        text_color,
+    );
 
     row![
         Node::spacer(),
-        col![Node::spacer(), button, Node::spacer()],
-        Node::spacer()
+        col![Node::spacer(), left_button, Node::spacer()],
+        Node::spacer(),
+        col![Node::spacer(), image, Node::spacer()],
+        Node::spacer(),
+        col![Node::spacer(), right_button, Node::spacer()],
+        Node::spacer(),
     ]
     .height(Length::Grow)
 }
 
+fn make_button(
+    label: String,
+    action: Message,
+    fill_color: Color,
+    border_color: Color,
+    text_color: Color,
+) -> Node<Message, Layout> {
+    let button_text = Node::new(
+        Text::new(label)
+            .with_font(&font::BLACKLETTER)
+            .with_color(text_color),
+    );
+    let mut button_quad = Node::new(
+        Quad::new()
+            .fill(fill_color)
+            .border_thickness(1)
+            .border_color(border_color),
+    )
+    .width(Length::Shrink)
+    .height(Length::Shrink)
+    .padding([0, 6, 5, 6])
+    .row();
+    button_quad.push(button_text);
+
+    let mut button_node = Node::new(Button::new().whenever_down(action))
+        .width(Length::Shrink)
+        .height(Length::Shrink);
+    button_node.push(button_quad);
+    button_node
+}
 /*
 fn main() -> Result<(), pixels::Error> {
     let initial_state = State::default();
