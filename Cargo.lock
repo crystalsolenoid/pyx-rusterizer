@@ -1173,7 +1173,7 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 [[package]]
 name = "icecube"
 version = "0.1.0"
-source = "git+https://github.com/crystalsolenoid/icecube#c0c5c7fc954cafba2234d537c7c757e216a67352"
+source = "git+https://github.com/crystalsolenoid/icecube#56222394dd37485c2b6513c13caf6ee19daeaa23"
 dependencies = [
  "bdf2",
  "env_logger 0.10.2",

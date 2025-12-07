@@ -1,7 +1,9 @@
 use icecube::palette::{Color, BLUE_DARK, BLUE_LIGHT};
 use icecube::quad::Quad;
+use icecube::slider::Slider;
 use icecube::text::Text;
 use num_traits::ToBytes;
+use std::f32::consts::PI;
 use std::time::{Duration, Instant};
 
 use icecube::button::Button;
@@ -56,10 +58,10 @@ impl State {
 }
 
 pub fn update(m: Message, state: &mut State) {
-    match dbg!(m) {
+    match m {
         Message::Invert => state.invert(),
         Message::TimeElapsed(duration) => render(duration, state),
-        Message::Rotate(radians) => state.rotation += radians,
+        Message::Rotate(radians) => state.rotation = radians,
     }
 }
 
@@ -95,37 +97,40 @@ pub fn view(state: &State) -> Node<Message, Layout> {
     .height(Length::Shrink)
     .width(Length::Shrink);
 
-    let fill_color = ToBytes::to_be_bytes(&state.buffer.palette[1]);
-    let border_color = ToBytes::to_be_bytes(&state.buffer.palette[2]);
+    let _fill_color = ToBytes::to_be_bytes(&state.buffer.palette[1]);
+    let _border_color = ToBytes::to_be_bytes(&state.buffer.palette[2]);
     let text_color = ToBytes::to_be_bytes(&state.buffer.palette[15]);
-    let left_button = make_button(
-        "<-".to_string(),
-        Message::Rotate(0.05),
-        fill_color,
-        border_color,
-        text_color,
+
+    let rotation_label = Node::new(
+        Text::new(format!(
+            "Rotation: {:.0} Degrees",
+            state.rotation * 360. / (2. * PI)
+        ))
+        .with_font(&font::BLACKLETTER)
+        .with_color(text_color),
     );
-    let right_button = make_button(
-        "->".to_string(),
-        Message::Rotate(-0.05),
-        fill_color,
-        border_color,
-        text_color,
-    );
+
+    let rotation_slider: Node<_, _> = Slider::new(-PI..PI, state.rotation)
+        .on_drag(Message::Rotate)
+        .into();
 
     row![
         Node::spacer(),
-        col![Node::spacer(), left_button, Node::spacer()],
+        col![
+            Node::spacer(),
+            rotation_label,
+            rotation_slider.width(100).height(10),
+            Node::spacer()
+        ]
+        .spacing(10),
         Node::spacer(),
         col![Node::spacer(), image, Node::spacer()],
-        Node::spacer(),
-        col![Node::spacer(), right_button, Node::spacer()],
         Node::spacer(),
     ]
     .height(Length::Grow)
 }
 
-fn make_button(
+fn _make_button(
     label: String,
     action: Message,
     fill_color: Color,
