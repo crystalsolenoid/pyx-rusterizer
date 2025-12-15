@@ -59,7 +59,7 @@ fn main() {
         gui::view,
         320,
         240,
-        ToBytes::to_be_bytes(&palette_handle.read().colors[0]),
+        ToBytes::to_be_bytes(&palette_handle.read().colors[21]),
         |d| Some(gui::Message::TimeElapsed(d)),
     )
     .unwrap();

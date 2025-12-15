@@ -1,4 +1,4 @@
-use icecube::palette::{Color, BLUE_DARK, BLUE_LIGHT};
+use icecube::palette::Color;
 use icecube::quad::Quad;
 use icecube::slider::Slider;
 use icecube::text::Text;
@@ -12,7 +12,7 @@ use icecube::layout::{Layout, Length};
 use icecube::tree::Node;
 use icecube::{col, font, row};
 
-use crate::animation::{self, Timing};
+use crate::animation::{self};
 use crate::buffer::Buffer;
 use crate::model::{draw, Model};
 
@@ -20,7 +20,8 @@ use crate::model::{draw, Model};
 pub enum Message {
     Invert,
     TimeElapsed(Duration),
-    Rotate(f32),
+    RotateX(f32),
+    RotateY(f32),
 }
 
 pub struct State {
@@ -28,7 +29,8 @@ pub struct State {
     model: Model,
     buffer: Buffer,
     start_instant: Instant,
-    rotation: f32,
+    x_rotation: f32,
+    y_rotation: f32,
 }
 
 impl State {
@@ -38,7 +40,8 @@ impl State {
             model,
             buffer,
             start_instant: Instant::now(),
-            rotation: 0.0,
+            x_rotation: 0.0,
+            y_rotation: 0.0,
         }
     }
 }
@@ -61,7 +64,8 @@ pub fn update(m: Message, state: &mut State) {
     match m {
         Message::Invert => state.invert(),
         Message::TimeElapsed(duration) => render(duration, state),
-        Message::Rotate(radians) => state.rotation = radians,
+        Message::RotateX(radians) => state.x_rotation = radians,
+        Message::RotateY(radians) => state.y_rotation = radians,
     }
 }
 
@@ -78,7 +82,7 @@ fn render(duration: Duration, state: &mut State) {
     //     _delta: duration.as_secs_f32(),
     // };
 
-    animation::update(state.rotation, &mut state.model);
+    animation::update(state.x_rotation, state.y_rotation, &mut state.model);
 }
 
 pub fn view(state: &State) -> Node<Message, Layout> {
@@ -97,21 +101,26 @@ pub fn view(state: &State) -> Node<Message, Layout> {
     .height(Length::Shrink)
     .width(Length::Shrink);
 
-    let _fill_color = ToBytes::to_be_bytes(&state.buffer.palette[1]);
-    let _border_color = ToBytes::to_be_bytes(&state.buffer.palette[2]);
-    let text_color = ToBytes::to_be_bytes(&state.buffer.palette[15]);
+    let fill_color = ToBytes::to_be_bytes(&state.buffer.palette[3]);
+    let border_color = ToBytes::to_be_bytes(&state.buffer.palette[20]);
+    let text_color = ToBytes::to_be_bytes(&state.buffer.palette[8]);
 
     let rotation_label = Node::new(
         Text::new(format!(
             "Rotation: {:.0} Degrees",
-            state.rotation * 360. / (2. * PI)
+            state.x_rotation * 360. / (2. * PI)
         ))
         .with_font(&font::BLACKLETTER)
         .with_color(text_color),
     );
 
-    let rotation_slider: Node<_, _> = Slider::new(-PI..PI, state.rotation)
-        .on_drag(Message::Rotate)
+    let x_rotation_slider: Node<_, _> = Slider::new(-PI..PI, state.x_rotation)
+        .on_drag(Message::RotateX)
+        .set_color(border_color, fill_color, text_color)
+        .into();
+    let y_rotation_slider: Node<_, _> = Slider::new(-PI..PI, state.y_rotation)
+        .on_drag(Message::RotateY)
+        .set_color(border_color, fill_color, text_color)
         .into();
 
     row![
@@ -119,7 +128,8 @@ pub fn view(state: &State) -> Node<Message, Layout> {
         col![
             Node::spacer(),
             rotation_label,
-            rotation_slider.width(100).height(10),
+            x_rotation_slider.width(100).height(10),
+            y_rotation_slider.width(100).height(10),
             Node::spacer()
         ]
         .spacing(10),

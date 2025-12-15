@@ -8,7 +8,7 @@ use crate::interpolate::{lerp, LerpIter};
 const COLOR_DEPTH: u8 = 32;
 //TODO: create a type for indexed colors
 
-const CLEAR_COLOR: u8 = 0;
+const CLEAR_COLOR: u8 = 21;
 /// Contains the current frames data both as both
 ///
 /// `canvas`: unscaled, indexed colored mode
