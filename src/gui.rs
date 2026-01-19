@@ -14,7 +14,10 @@ use icecube::{col, font, row};
 
 use crate::animation::{self};
 use crate::buffer::Buffer;
+use crate::gui::color_picker::ColorPicker;
 use crate::model::{draw, Model};
+
+mod color_picker;
 
 #[derive(Debug, Copy, Clone)]
 pub enum Message {
@@ -22,6 +25,7 @@ pub enum Message {
     TimeElapsed(Duration),
     RotateX(f32),
     RotateY(f32),
+    SelectColor(Color),
 }
 
 pub struct State {
@@ -31,6 +35,7 @@ pub struct State {
     start_instant: Instant,
     x_rotation: f32,
     y_rotation: f32,
+    selected_color: Color,
 }
 
 impl State {
@@ -42,6 +47,7 @@ impl State {
             start_instant: Instant::now(),
             x_rotation: 0.0,
             y_rotation: 0.0,
+            selected_color: Default::default(),
         }
     }
 }
@@ -66,6 +72,7 @@ pub fn update(m: Message, state: &mut State) {
         Message::TimeElapsed(duration) => render(duration, state),
         Message::RotateX(radians) => state.x_rotation = radians,
         Message::RotateY(radians) => state.y_rotation = radians,
+        Message::SelectColor(color) => state.selected_color = color,
     }
 }
 
@@ -85,7 +92,7 @@ fn render(duration: Duration, state: &mut State) {
     animation::update(state.x_rotation, state.y_rotation, &mut state.model);
 }
 
-pub fn view(state: &State) -> Node<Message, Layout> {
+pub fn view<'a>(state: &State) -> Node<'a, Message, Layout> {
     // TODO just store a [u8; 4] in buffer instead of u32?
     let render: Vec<[u8; 4]> = state
         .buffer
@@ -111,7 +118,7 @@ pub fn view(state: &State) -> Node<Message, Layout> {
             state.x_rotation * 360. / (2. * PI)
         ))
         .with_font(&font::BLACKLETTER)
-        .with_color(text_color),
+        .with_color(state.selected_color),
     );
 
     let x_rotation_slider: Node<_, _> = Slider::new(-PI..PI, state.x_rotation)
@@ -123,6 +130,21 @@ pub fn view(state: &State) -> Node<Message, Layout> {
         .set_color(border_color, fill_color, text_color)
         .into();
 
+    let img_data: Vec<Color> = state
+        .buffer
+        .palette
+        .clone()
+        .into_iter()
+        .map(|px| ToBytes::to_be_bytes(&px))
+        .collect();
+
+    let color_picker = ColorPicker {
+        w: 8,
+        h: img_data.len() / 8,
+        scale: 8,
+        img_data,
+    };
+
     row![
         Node::spacer(),
         col![
@@ -130,6 +152,7 @@ pub fn view(state: &State) -> Node<Message, Layout> {
             rotation_label,
             x_rotation_slider.width(100).height(10),
             y_rotation_slider.width(100).height(10),
+            color_picker.view(),
             Node::spacer()
         ]
         .spacing(10),
@@ -140,13 +163,13 @@ pub fn view(state: &State) -> Node<Message, Layout> {
     .height(Length::Grow)
 }
 
-fn _make_button(
+fn _make_button<'a>(
     label: String,
     action: Message,
     fill_color: Color,
     border_color: Color,
     text_color: Color,
-) -> Node<Message, Layout> {
+) -> Node<'a, Message, Layout> {
     let button_text = Node::new(
         Text::new(label)
             .with_font(&font::BLACKLETTER)
