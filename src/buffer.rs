@@ -1,6 +1,7 @@
 use core::f32;
 
 use glam::Vec2;
+use num_traits::ToBytes;
 
 use crate::interpolate::{lerp, LerpIter};
 
@@ -9,50 +10,30 @@ const COLOR_DEPTH: u8 = 32;
 //TODO: create a type for indexed colors
 
 const CLEAR_COLOR: u8 = 21;
-/// Contains the current frames data both as both
+/// Contains the current frames data both as
 ///
 /// `canvas`: unscaled, indexed colored mode
-///
-/// and
-///
-/// `rgb_pixels`: scaled up to screen resolution, rgb colors
 pub struct Buffer {
-    /// unscaled width
     width: usize,
-    /// unscaled height
     height: usize,
     /// map color indicies to u32 rgb values
     pub palette: [u32; COLOR_DEPTH as usize],
 
     /// User controlled, screen buffer, holding color palette indices
-    /// Length is `width * height` (not scaled by `scale`)
+    /// Length is `width * height`
     pub canvas: Vec<u8>,
     z_buffer: Vec<f32>,
-
-    /// API Controlled screen buffer holding u32 values that represent rgb values
-    /// Length is `(width  * scale) * (height * scale)`
-    /// Always kept in sync with `canvas`
-    rgb_pixels: Vec<u32>, // TODO turn into [u8;4]?
-    scale: usize,
 }
 
 impl Buffer {
     //    pub fn new
-    pub fn new(
-        width: usize,
-        height: usize,
-        palette: [u32; COLOR_DEPTH as usize],
-        scale: usize,
-    ) -> Self {
+    pub fn new(width: usize, height: usize, palette: [u32; COLOR_DEPTH as usize]) -> Self {
         Buffer {
             width,
             height,
             palette,
             canvas: vec![CLEAR_COLOR; width * height],
             z_buffer: vec![f32::NEG_INFINITY; width * height],
-            rgb_pixels: vec![palette[CLEAR_COLOR as usize]; (width * scale) * (height * scale)],
-
-            scale,
         }
     }
 
@@ -65,14 +46,19 @@ impl Buffer {
     pub fn height(&self) -> usize {
         self.height
     }
-    pub fn rgb_pixels(&self) -> &Vec<u32> {
-        &self.rgb_pixels
+
+    pub fn get_palette_rgb(&self) -> Vec<[u8; 4]> {
+        self.canvas
+            .iter()
+            .map(|idx| ToBytes::to_be_bytes(&self.palette[*idx as usize]))
+            .collect()
     }
+
     pub fn clear_screen(&mut self) {
-        self.canvas.fill(0);
+        self.canvas.fill(CLEAR_COLOR);
         self.z_buffer.fill(f32::NEG_INFINITY);
-        self.rgb_pixels.fill(self.palette[CLEAR_COLOR as usize]);
     }
+
     /// sets an indexed color at `x`,`y`
     pub fn pix(&mut self, x: i32, y: i32, color: u8) {
         let x = Self::clamp_i32(x, 0, self.width);
@@ -84,15 +70,6 @@ impl Buffer {
     fn pix_unchecked(&mut self, x: usize, y: usize, color: u8) {
         // update pixels
         self.canvas[y * self.width + x] = color;
-
-        //update rbg_pixels
-        let rgb_color = self.palette[color as usize];
-
-        for row in y * self.scale..(y + 1) * self.scale {
-            let index = row * self.width * self.scale + (x * self.scale);
-            let slice = &mut self.rgb_pixels[index..index + self.scale];
-            slice.fill(rgb_color);
-        }
     }
 
     fn clamp_i32(x: i32, min: usize, max: usize) -> usize {
@@ -140,21 +117,12 @@ impl Buffer {
             h_line_width + 1,
         );
 
-        let rgb_color = self.palette[color as usize];
         range.zip(z_values).for_each(|(x, (_, z))| {
             //// Z buffer test
             if z > self.z_buffer[canvas_offset + x] {
                 //// Update Canvas/Z-buffer
                 self.z_buffer[canvas_offset + x] = z;
                 self.canvas[canvas_offset + x] = color;
-
-                //// Update rgb_pixels
-                for row in y * self.scale..(y + 1) * self.scale {
-                    let offset = row * self.width * self.scale;
-                    let slice = &mut self.rgb_pixels
-                        [offset + x * self.scale..(x + 1) * self.scale + offset];
-                    slice.fill(rgb_color);
-                }
             }
         });
     }

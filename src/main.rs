@@ -7,7 +7,7 @@ use num_traits::ToBytes;
 use pyx_rusterizer::{
     buffer::Buffer,
     color::{NamedMaterials, Palette},
-    constants::{HEIGHT, SCALING_FACTOR, WIDTH},
+    constants::{HEIGHT, WIDTH},
     gui,
     model::Model,
 };
@@ -23,7 +23,7 @@ fn main() {
     {
         let palette = palette_handle.read();
 
-        buffer = Buffer::new(WIDTH, HEIGHT, palette.colors, SCALING_FACTOR);
+        buffer = Buffer::new(WIDTH, HEIGHT, palette.colors);
     }
 
     /*

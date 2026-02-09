@@ -94,13 +94,7 @@ fn render(duration: Duration, state: &mut State) {
 
 pub fn view<'a>(state: &State) -> Node<'a, Message, Layout> {
     // TODO just store a [u8; 4] in buffer instead of u32?
-    let render: Vec<[u8; 4]> = state
-        .buffer
-        .rgb_pixels()
-        .clone()
-        .into_iter()
-        .map(|px| ToBytes::to_be_bytes(&px))
-        .collect();
+    let render: Vec<[u8; 4]> = state.buffer.get_palette_rgb().clone().into_iter().collect();
 
     let image = Node::new(
         Image::<[u8; 4]>::new(render, state.buffer.width(), state.buffer.height()).scale_factor(2),
