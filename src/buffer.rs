@@ -3,10 +3,11 @@ use core::f32;
 use glam::Vec2;
 use num_traits::ToBytes;
 
-use crate::interpolate::{lerp, LerpIter};
+use crate::{
+    constants::COLOR_DEPTH,
+    interpolate::{lerp, LerpIter},
+};
 
-/// u8 value, because that is the biggest that will fit into palette_pixels
-const COLOR_DEPTH: u8 = 32;
 //TODO: create a type for indexed colors
 
 const CLEAR_COLOR: u8 = 21;
@@ -23,6 +24,9 @@ pub struct Buffer {
     /// Length is `width * height`
     pub canvas: Vec<u8>,
     z_buffer: Vec<f32>,
+    // TODO this index is per-mesh, so we need to specify a mesh
+    // in addition to the triangle index
+    tri_buffer: Vec<Option<usize>>,
 }
 
 impl Buffer {
@@ -34,6 +38,7 @@ impl Buffer {
             palette,
             canvas: vec![CLEAR_COLOR; width * height],
             z_buffer: vec![f32::NEG_INFINITY; width * height],
+            tri_buffer: vec![None; width * height],
         }
     }
 
@@ -47,6 +52,11 @@ impl Buffer {
         self.height
     }
 
+    pub fn tri_idx_at_pixel(&self, x: usize, y: usize) -> Option<usize> {
+        let i = y * self.width + x;
+        self.tri_buffer[i]
+    }
+
     pub fn get_palette_rgb(&self) -> Vec<[u8; 4]> {
         self.canvas
             .iter()
@@ -57,6 +67,7 @@ impl Buffer {
     pub fn clear_screen(&mut self) {
         self.canvas.fill(CLEAR_COLOR);
         self.z_buffer.fill(f32::NEG_INFINITY);
+        self.tri_buffer.fill(None);
     }
 
     /// sets an indexed color at `x`,`y`
@@ -85,7 +96,16 @@ impl Buffer {
         }
     }
 
-    pub fn h_line(&mut self, x1: f32, x2: f32, y: i32, z1: f32, z2: f32, color: u8) {
+    pub fn h_line(
+        &mut self,
+        x1: f32,
+        x2: f32,
+        y: i32,
+        z1: f32,
+        z2: f32,
+        color: u8,
+        tri_idx: usize,
+    ) {
         let y = match usize::try_from(y) {
             Ok(val) => {
                 if val >= self.height {
@@ -123,6 +143,7 @@ impl Buffer {
                 //// Update Canvas/Z-buffer
                 self.z_buffer[canvas_offset + x] = z;
                 self.canvas[canvas_offset + x] = color;
+                self.tri_buffer[canvas_offset + x] = Some(tri_idx);
             }
         });
     }

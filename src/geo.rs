@@ -33,13 +33,14 @@ impl Shape for Mesh {
             .map(|v| transform.transform_point3(*v))
             .collect();
 
-        for triangle in &self.triangles {
+        for (i, triangle) in self.triangles.iter().enumerate() {
             let (t1, t2, t3) = triangle.index;
             let vert_tri = Tri::new(
                 transformed_verts[t1],
                 transformed_verts[t2],
                 transformed_verts[t3],
                 self.materials.0[triangle.material_index],
+                i,
             );
             poly::draw_tri(buffer, &vert_tri);
         }

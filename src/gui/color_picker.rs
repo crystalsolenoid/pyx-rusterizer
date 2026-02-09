@@ -5,6 +5,9 @@ use icecube::{
     palette::Color,
     tree::Node,
 };
+use num_traits::FromBytes;
+
+use crate::{color::Palette, constants::COLOR_DEPTH};
 
 #[derive(Clone)]
 pub struct ColorPicker {
@@ -12,6 +15,7 @@ pub struct ColorPicker {
     pub w: usize,
     pub h: usize,
     pub scale: usize,
+    pub palette: Vec<u32>,
 }
 
 impl ColorPicker {
@@ -24,7 +28,12 @@ impl ColorPicker {
         let mut mouse_image_wrapper: Node<'a, super::Message, _> = MouseArea::new()
             .on_press(move |pos| {
                 let (px, py) = (pos.0 / self.scale, pos.1 / self.scale);
-                super::Message::SelectColor(self.img_data[px + py * self.w])
+                let icecube_color: Color = self.img_data[px + py * self.w];
+                let idx: Option<usize> = self.palette.iter().position(|&x| {
+                    let query: u32 = FromBytes::from_be_bytes(&icecube_color);
+                    x == query
+                });
+                super::Message::SelectColor(idx.unwrap_or_default() as u8)
             })
             .into();
         mouse_image_wrapper.push(image);

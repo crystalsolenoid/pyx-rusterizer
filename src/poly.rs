@@ -13,9 +13,11 @@ pub struct Tri {
     pub v3: Vec3,
     pub base_color: Material,
     pub illumination: f32,
+    idx: usize,
 }
+
 impl Tri {
-    pub fn new(v1: Vec3, v2: Vec3, v3: Vec3, base_color: Material) -> Tri {
+    pub fn new(v1: Vec3, v2: Vec3, v3: Vec3, base_color: Material, idx: usize) -> Tri {
         let diffuse_light = 0.08;
         let light_pos = Vec3::new(1000.0, -1000.0, 500.0);
         let tri_pos = (v1 + v2 + v3) / 3.;
@@ -31,6 +33,7 @@ impl Tri {
             v3,
             base_color,
             illumination,
+            idx,
         }
     }
 }
@@ -56,6 +59,7 @@ struct UpDownTri {
     base_right: Vec3,
     base_color: Material,
     illumination: f32,
+    idx: usize,
 }
 
 impl UpDownTri {
@@ -65,6 +69,7 @@ impl UpDownTri {
         tip: Vec3,
         base_color: Material,
         illumination: f32,
+        idx: usize,
     ) -> UpDownTri {
         // TODO WHY?? lifetimes
         assert_eq!(base_1.y, base_2.y);
@@ -79,6 +84,7 @@ impl UpDownTri {
             base_right,
             base_color,
             illumination,
+            idx,
         }
     }
 
@@ -102,6 +108,7 @@ impl UpDownTri {
                 z_next_left,
                 z_next_right,
                 lit_color(self.illumination, self.base_color),
+                self.idx,
             )
         });
     }
@@ -125,6 +132,7 @@ impl UpDownTri {
                 z_next_left,
                 z_next_right,
                 lit_color(self.illumination, self.base_color),
+                self.idx,
             )
         });
     }
@@ -158,6 +166,7 @@ fn split_tri<'a>(tri: &'a Tri) -> (Option<UpDownTri>, Option<UpDownTri>) {
                 top_point,
                 tri.base_color,
                 tri.illumination,
+                tri.idx,
             )),
             None,
         );
@@ -172,6 +181,7 @@ fn split_tri<'a>(tri: &'a Tri) -> (Option<UpDownTri>, Option<UpDownTri>) {
                 bot_point,
                 tri.base_color,
                 tri.illumination,
+                tri.idx,
             )),
         );
     };
@@ -186,6 +196,7 @@ fn split_tri<'a>(tri: &'a Tri) -> (Option<UpDownTri>, Option<UpDownTri>) {
         top_point,
         tri.base_color,
         tri.illumination,
+        tri.idx,
     ));
     let down_tri = Some(UpDownTri::new(
         mid_point,
@@ -193,19 +204,7 @@ fn split_tri<'a>(tri: &'a Tri) -> (Option<UpDownTri>, Option<UpDownTri>) {
         bot_point,
         tri.base_color,
         tri.illumination,
+        tri.idx,
     ));
     (up_tri, down_tri)
 }
-/*
-    fn draw(self, buffer: &mut Buffer) {
-        match self.up_tri {
-            Some(tri) => tri.draw_up(buffer),
-            None => (),
-        }
-        match self.down_tri {
-            Some(tri) => tri.draw_down(buffer),
-            None => (),
-        }
-    }
-}
-*/

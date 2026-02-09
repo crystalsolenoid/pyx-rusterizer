@@ -2,7 +2,7 @@ use assets_manager::Asset;
 use serde::Deserialize;
 use std::collections::HashMap;
 
-#[derive(Deserialize, Debug, Asset)]
+#[derive(Clone, Deserialize, Debug, Asset)]
 #[asset_format = "toml"]
 pub struct Palette {
     pub colors: [u32; 32],

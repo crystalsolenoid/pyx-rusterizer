@@ -1,3 +1,4 @@
+use icecube::mouse_area::MouseArea;
 use icecube::palette::Color;
 use icecube::quad::Quad;
 use icecube::slider::Slider;
@@ -14,6 +15,8 @@ use icecube::{col, font, row};
 
 use crate::animation::{self};
 use crate::buffer::Buffer;
+use crate::color::Material;
+use crate::constants::COLOR_DEPTH;
 use crate::gui::color_picker::ColorPicker;
 use crate::model::{draw, Model};
 
@@ -25,7 +28,8 @@ pub enum Message {
     TimeElapsed(Duration),
     RotateX(f32),
     RotateY(f32),
-    SelectColor(Color),
+    SelectColor(u8),
+    ClickRender(usize, usize),
 }
 
 pub struct State {
@@ -35,7 +39,7 @@ pub struct State {
     start_instant: Instant,
     x_rotation: f32,
     y_rotation: f32,
-    selected_color: Color,
+    selected_color: u8,
 }
 
 impl State {
@@ -73,6 +77,15 @@ pub fn update(m: Message, state: &mut State) {
         Message::RotateX(radians) => state.x_rotation = radians,
         Message::RotateY(radians) => state.y_rotation = radians,
         Message::SelectColor(color) => state.selected_color = color,
+        Message::ClickRender(x, y) => {
+            let tri = state.buffer.tri_idx_at_pixel(x, y);
+            if let Some(tri) = tri {
+                let mat = state.model.cube.shape.triangles[tri].material_index;
+                state.model.cube.shape.materials.0[mat] = Material {
+                    shades: [state.selected_color; 9],
+                };
+            }
+        }
     }
 }
 
@@ -96,11 +109,22 @@ pub fn view<'a>(state: &State) -> Node<'a, Message, Layout> {
     // TODO just store a [u8; 4] in buffer instead of u32?
     let render: Vec<[u8; 4]> = state.buffer.get_palette_rgb().clone().into_iter().collect();
 
+    const RENDER_SCALE: usize = 2;
     let image = Node::new(
-        Image::<[u8; 4]>::new(render, state.buffer.width(), state.buffer.height()).scale_factor(2),
+        Image::<[u8; 4]>::new(render, state.buffer.width(), state.buffer.height())
+            .scale_factor(RENDER_SCALE),
     )
     .height(Length::Shrink)
     .width(Length::Shrink);
+
+    let mut mouse_image_wrapper: Node<Message, _> = MouseArea::new()
+        // .whenever_down(|pos| Message::BoardClick(pos))
+        // .on_hover(|pos| Message::BoardHover(pos))
+        // .on_exit(|| Message::BoardExit)
+        .on_press(|pos| Message::ClickRender(pos.0 / RENDER_SCALE, pos.1 / RENDER_SCALE))
+        .into();
+
+    mouse_image_wrapper.push(image);
 
     let fill_color = ToBytes::to_be_bytes(&state.buffer.palette[3]);
     let border_color = ToBytes::to_be_bytes(&state.buffer.palette[20]);
@@ -112,7 +136,10 @@ pub fn view<'a>(state: &State) -> Node<'a, Message, Layout> {
             state.x_rotation * 360. / (2. * PI)
         ))
         .with_font(&font::BLACKLETTER)
-        .with_color(state.selected_color),
+        .with_color(index_to_icecube_color(
+            state.selected_color,
+            state.buffer.palette,
+        )),
     );
 
     let x_rotation_slider: Node<_, _> = Slider::new(-PI..PI, state.x_rotation)
@@ -137,6 +164,7 @@ pub fn view<'a>(state: &State) -> Node<'a, Message, Layout> {
         h: img_data.len() / 8,
         scale: 8,
         img_data,
+        palette: state.buffer.palette.to_vec(),
     };
 
     row![
@@ -151,7 +179,7 @@ pub fn view<'a>(state: &State) -> Node<'a, Message, Layout> {
         ]
         .spacing(10),
         Node::spacer(),
-        col![Node::spacer(), image, Node::spacer()],
+        col![Node::spacer(), mouse_image_wrapper, Node::spacer()],
         Node::spacer(),
     ]
     .height(Length::Grow)
@@ -187,10 +215,8 @@ fn _make_button<'a>(
     button_node.push(button_quad);
     button_node
 }
-/*
-fn main() -> Result<(), pixels::Error> {
-    let initial_state = State::default();
 
-    icecube::run(initial_state, update, view, 320, 240, MAIN_LIGHT, |_| None)
+fn index_to_icecube_color(color_idx: u8, palette: [u32; COLOR_DEPTH as usize]) -> Color {
+    let color_u32 = palette[color_idx as usize];
+    ToBytes::to_be_bytes(&color_u32)
 }
-*/
