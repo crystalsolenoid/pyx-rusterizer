@@ -7,18 +7,25 @@ use icecube::{
 };
 use num_traits::FromBytes;
 
-use crate::{color::Palette, constants::COLOR_DEPTH};
+use crate::gui::Message;
 
 #[derive(Clone)]
-pub struct ColorPicker {
+pub struct PixelPicker<F>
+where
+    F: Fn(usize, usize, Option<usize>) -> Message + 'static,
+{
     pub img_data: Vec<Color>,
     pub w: usize,
     pub h: usize,
     pub scale: usize,
     pub palette: Vec<u32>,
+    pub on_press: F,
 }
 
-impl ColorPicker {
+impl<F> PixelPicker<F>
+where
+    F: Fn(usize, usize, Option<usize>) -> Message + 'static,
+{
     pub fn view<'a>(self) -> Node<'a, super::Message, Layout> {
         let image =
             Node::new(Image::new(self.img_data.clone(), self.w, self.h).scale_factor(self.scale))
@@ -33,7 +40,7 @@ impl ColorPicker {
                     let query: u32 = FromBytes::from_be_bytes(&icecube_color);
                     x == query
                 });
-                super::Message::SelectColor(idx.unwrap_or_default() as u8)
+                (self.on_press)(px, py, idx)
             })
             .into();
         mouse_image_wrapper.push(image);

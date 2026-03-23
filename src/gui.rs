@@ -15,9 +15,8 @@ use icecube::{col, font, row};
 
 use crate::animation::{self};
 use crate::buffer::Buffer;
-use crate::color::Material;
 use crate::constants::COLOR_DEPTH;
-use crate::gui::color_picker::ColorPicker;
+use crate::gui::color_picker::PixelPicker;
 use crate::model::{draw, Model};
 
 mod color_picker;
@@ -29,7 +28,8 @@ pub enum Message {
     RotateX(f32),
     RotateY(f32),
     SelectColor(u8),
-    ClickRender(usize, usize),
+    SelectMaterial(usize, usize),
+    PaintShade(usize),
 }
 
 pub struct State {
@@ -40,6 +40,7 @@ pub struct State {
     x_rotation: f32,
     y_rotation: f32,
     selected_color: u8,
+    selected_material: usize,
 }
 
 impl State {
@@ -52,6 +53,7 @@ impl State {
             x_rotation: 0.0,
             y_rotation: 0.0,
             selected_color: Default::default(),
+            selected_material: 0,
         }
     }
 }
@@ -77,14 +79,15 @@ pub fn update(m: Message, state: &mut State) {
         Message::RotateX(radians) => state.x_rotation = radians,
         Message::RotateY(radians) => state.y_rotation = radians,
         Message::SelectColor(color) => state.selected_color = color,
-        Message::ClickRender(x, y) => {
+        Message::SelectMaterial(x, y) => {
             let tri = state.buffer.tri_idx_at_pixel(x, y);
             if let Some(tri) = tri {
-                let mat = state.model.cube.shape.triangles[tri].material_index;
-                state.model.cube.shape.materials.0[mat] = Material {
-                    shades: [state.selected_color; 9],
-                };
+                state.selected_material = state.model.cube.shape.triangles[tri].material_index;
             }
+        }
+        Message::PaintShade(i) => {
+            state.model.cube.shape.materials.0[state.selected_material].shades[i] =
+                state.selected_color;
         }
     }
 }
@@ -121,7 +124,7 @@ pub fn view<'a>(state: &State) -> Node<'a, Message, Layout> {
         // .whenever_down(|pos| Message::BoardClick(pos))
         // .on_hover(|pos| Message::BoardHover(pos))
         // .on_exit(|| Message::BoardExit)
-        .on_press(|pos| Message::ClickRender(pos.0 / RENDER_SCALE, pos.1 / RENDER_SCALE))
+        .on_press(|pos| Message::SelectMaterial(pos.0 / RENDER_SCALE, pos.1 / RENDER_SCALE))
         .into();
 
     mouse_image_wrapper.push(image);
@@ -159,12 +162,30 @@ pub fn view<'a>(state: &State) -> Node<'a, Message, Layout> {
         .map(|px| ToBytes::to_be_bytes(&px))
         .collect();
 
-    let color_picker = ColorPicker {
+    let color_picker = PixelPicker {
         w: 8,
         h: img_data.len() / 8,
         scale: 8,
-        img_data,
+        img_data: img_data,
         palette: state.buffer.palette.to_vec(),
+        on_press: |_, _, idx| Message::SelectColor(idx.unwrap_or_default() as u8),
+    };
+
+    let material_img: Vec<Color> = state.model.cube.shape.materials.0[state.selected_material]
+        .shades
+        .clone()
+        .into_iter()
+        .map(|i| state.buffer.palette[i as usize])
+        .map(|px| ToBytes::to_be_bytes(&px))
+        .collect();
+
+    let material_panel = PixelPicker {
+        w: 9,
+        h: 1,
+        scale: 8,
+        img_data: material_img,
+        palette: state.buffer.palette.to_vec(), // TODO unused. refactor?
+        on_press: |px, _, _| Message::PaintShade(px),
     };
 
     row![
@@ -175,6 +196,7 @@ pub fn view<'a>(state: &State) -> Node<'a, Message, Layout> {
             x_rotation_slider.width(100).height(10),
             y_rotation_slider.width(100).height(10),
             color_picker.view(),
+            material_panel.view(),
             Node::spacer()
         ]
         .spacing(10),
