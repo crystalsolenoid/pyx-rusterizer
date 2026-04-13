@@ -61,7 +61,7 @@ impl Geo {
             _children: Vec::new(),
         }
     }
-    pub fn render(&self, buffer: &mut Buffer) {
+    pub fn deferred_render(&self, buffer: &mut Buffer) {
         self.shape.render(buffer, self.transform);
     }
 }

@@ -107,8 +107,8 @@ impl UpDownTri {
                 y,
                 z_next_left,
                 z_next_right,
-                lit_color(self.illumination, self.base_color),
                 self.idx,
+                self.illumination,
             )
         });
     }
@@ -131,8 +131,8 @@ impl UpDownTri {
                 y,
                 z_next_left,
                 z_next_right,
-                lit_color(self.illumination, self.base_color),
                 self.idx,
+                self.illumination,
             )
         });
     }

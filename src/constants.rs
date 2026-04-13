@@ -3,3 +3,4 @@ pub const HEIGHT: usize = 100;
 
 /// u8 value, because that is the biggest that will fit into palette_pixels
 pub const COLOR_DEPTH: u8 = 32;
+pub const CLEAR_COLOR: u8 = 21;

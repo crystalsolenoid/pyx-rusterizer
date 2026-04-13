@@ -24,5 +24,6 @@ impl Model {
 pub fn draw(buffer: &mut Buffer, model: &Model) {
     buffer.clear_screen();
 
-    model.cube.render(buffer);
+    model.cube.deferred_render(buffer);
+    buffer.finalize_render(&model.cube.shape.materials.0, &model.cube.shape.triangles);
 }

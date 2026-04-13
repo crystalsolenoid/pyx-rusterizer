@@ -4,13 +4,15 @@ use glam::Vec2;
 use num_traits::ToBytes;
 
 use crate::{
-    constants::COLOR_DEPTH,
+    color::{self, dither_mask_shader, flat_lit_shader, Material},
+    constants::{CLEAR_COLOR, COLOR_DEPTH},
+    geo::IndexedTriangle,
     interpolate::{lerp, LerpIter},
+    poly::Tri,
 };
 
 //TODO: create a type for indexed colors
 
-const CLEAR_COLOR: u8 = 21;
 /// Contains the current frames data both as
 ///
 /// `canvas`: unscaled, indexed colored mode
@@ -27,9 +29,38 @@ pub struct Buffer {
     // TODO this index is per-mesh, so we need to specify a mesh
     // in addition to the triangle index
     tri_buffer: Vec<Option<usize>>,
+    light_buffer: Vec<f32>,
 }
 
 impl Buffer {
+    // TODO use stateful structs type pattern for render state?
+    pub fn finalize_render(&mut self, materials: &[Material], tris: &[IndexedTriangle]) {
+        // self.canvas = self.apply_fragment_shader(flat_lit_shader, materials, tris);
+        self.canvas = self.apply_fragment_shader(dither_mask_shader, materials, tris);
+    }
+
+    pub fn apply_fragment_shader<F>(
+        &self,
+        shader: F,
+        materials: &[Material],
+        tris: &[IndexedTriangle],
+    ) -> Vec<u8>
+    where
+        F: Fn(usize, usize, Option<&Material>, f32) -> u8,
+    {
+        // need lighting and material values per pixel
+        self.tri_buffer
+            .iter()
+            .zip(self.light_buffer.iter())
+            .enumerate()
+            .map(|(i, (tri_idx, light))| (i % self.width, i / self.width, tri_idx, light))
+            .map(|(x, y, tri_idx, light)| {
+                let material = tri_idx.map(|i| &materials[tris[i].material_index]);
+                (shader)(x, y, material, *light)
+            })
+            .collect()
+    }
+
     //    pub fn new
     pub fn new(width: usize, height: usize, palette: [u32; COLOR_DEPTH as usize]) -> Self {
         Buffer {
@@ -39,6 +70,7 @@ impl Buffer {
             canvas: vec![CLEAR_COLOR; width * height],
             z_buffer: vec![f32::NEG_INFINITY; width * height],
             tri_buffer: vec![None; width * height],
+            light_buffer: vec![0.; width * height],
         }
     }
 
@@ -103,8 +135,8 @@ impl Buffer {
         y: i32,
         z1: f32,
         z2: f32,
-        color: u8,
         tri_idx: usize,
+        illumination: f32,
     ) {
         let y = match usize::try_from(y) {
             Ok(val) => {
@@ -142,8 +174,8 @@ impl Buffer {
             if z > self.z_buffer[canvas_offset + x] {
                 //// Update Canvas/Z-buffer
                 self.z_buffer[canvas_offset + x] = z;
-                self.canvas[canvas_offset + x] = color;
                 self.tri_buffer[canvas_offset + x] = Some(tri_idx);
+                self.light_buffer[canvas_offset + x] = illumination;
             }
         });
     }
