@@ -48,8 +48,8 @@ impl Shape for Mesh {
 }
 
 pub struct Geo {
-    pub shape: Mesh, //Box<dyn Shape>,
-    pub transform: Affine3A,
+    pub shape: Mesh,         //Box<dyn Shape>,
+    pub transform: Affine3A, // TODO this is currently overwritten in animation.rs
     _children: Vec<Geo>,
 }
 
