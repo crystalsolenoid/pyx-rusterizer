@@ -126,16 +126,16 @@ pub fn parse(path: &Path, named_materials: NamedMaterials) -> Result<Mesh, Error
                 0..=2 => panic!(),
                 3 => Some(vec![IndexedTriangle {
                     index: (fs[0], fs[1], fs[2]),
-                    material_index: material_references[material_name],
+                    material_index: get_material(&material_references, material_name),
                 }]),
                 4 => Some(vec![
                     IndexedTriangle {
                         index: (fs[0], fs[1], fs[2]),
-                        material_index: material_references[material_name],
+                        material_index: get_material(&material_references, material_name),
                     },
                     IndexedTriangle {
                         index: (fs[2], fs[3], fs[0]),
-                        material_index: material_references[material_name],
+                        material_index: get_material(&material_references, material_name),
                     },
                 ]),
                 _ => Some(
@@ -143,7 +143,7 @@ pub fn parse(path: &Path, named_materials: NamedMaterials) -> Result<Mesh, Error
                         .windows(2)
                         .map(|window_f| IndexedTriangle {
                             index: (fs[0], window_f[0], window_f[1]),
-                            material_index: material_references[material_name],
+                            material_index: get_material(&material_references, material_name),
                         })
                         .collect::<Vec<_>>(),
                 ),
@@ -157,5 +157,15 @@ pub fn parse(path: &Path, named_materials: NamedMaterials) -> Result<Mesh, Error
         materials,
         triangles,
         vertices,
+    })
+}
+
+fn get_material(map: &HashMap<String, usize>, name: &str) -> usize {
+    // TODO this could be handled better. Currently I think porygon's mesh is
+    // hardcoded. But I wanted our other .obj files to run without fussing with
+    // making a materials.toml file for them for now.
+    *map.get(name).unwrap_or_else(|| {
+        println!("WARNING: OBJ Parsing: Could not find material {name}. Using default.");
+        &0
     })
 }

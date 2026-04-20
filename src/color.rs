@@ -2,6 +2,8 @@ use assets_manager::Asset;
 use serde::Deserialize;
 use std::collections::HashMap;
 
+use crate::{buffer::Buffer, constants::CLEAR_COLOR, poly::Tri};
+
 #[derive(Clone, Deserialize, Debug, Asset)]
 #[asset_format = "toml"]
 pub struct Palette {
@@ -90,6 +92,55 @@ pub fn lit_color(value: f32, base_color: Material) -> u8 {
     let index = scaled.floor() as usize;
     let shades = base_color.shades;
     shades[index]
+}
+
+pub fn flat_lit_shader(_x: usize, _y: usize, material: Option<&Material>, light: f32) -> u8 {
+    material
+        .map(|m| lit_color(light, *m))
+        .unwrap_or(CLEAR_COLOR)
+}
+
+fn color_index(v: f32, num_colors: usize) -> usize {
+    ((v * num_colors as f32).floor() as usize).clamp(0, num_colors - 1)
+}
+
+fn color_rounded_index(v: f32, num_colors: usize) -> usize {
+    // in index units, the transition point closest to v
+    (v * num_colors as f32).round() as usize
+}
+
+fn closest_transition(v: f32, num_colors: usize) -> f32 {
+    // in light units, the transition point closest to v
+    color_rounded_index(v, num_colors) as f32 - 1. / num_colors as f32
+}
+
+fn transition_distance(v: f32, num_colors: usize) -> f32 {
+    (v - closest_transition(v, num_colors)).abs()
+}
+
+const DITHER_RATIO: f32 = 0.5;
+pub fn dither_mask_shader(x: usize, y: usize, material: Option<&Material>, light: f32) -> u8 {
+    material
+        .map(|m| {
+            // TODO which light scaling should we do?
+            // let scaled = 2.0f32.powf(3.0 * light.clamp(0., 1.)) / 9.;
+            let num_shades = m.shades.len();
+            let num_shades = 2;
+            let scaled = light.clamp(0., 1.);
+            let c2 = color_rounded_index(closest_transition(scaled, num_shades), num_shades);
+            let c1 = (c2.saturating_sub(1)).clamp(0, num_shades - 1);
+            let transition_width = 1. / num_shades as f32;
+            if transition_distance(scaled, num_shades) < transition_width * DITHER_RATIO / 2. {
+                if (x ^ y) % 2 == 0 {
+                    m.shades[c2]
+                } else {
+                    m.shades[c1]
+                }
+            } else {
+                m.shades[color_index(scaled, num_shades)]
+            }
+        })
+        .unwrap_or(CLEAR_COLOR)
 }
 
 pub fn lit_color_old(value: f32, base_color: Color) -> Color {
