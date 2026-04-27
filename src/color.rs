@@ -120,27 +120,64 @@ fn transition_distance(v: f32, num_colors: usize) -> f32 {
 
 const DITHER_RATIO: f32 = 0.5; // should go between 0 and 1
 pub fn dither_mask_shader(x: usize, y: usize, material: Option<&Material>, light: f32) -> u8 {
+    // ratio goes between 0 and 1
     material
         .map(|m| {
             // TODO which light scaling should we do?
             // let scaled = 2.0f32.powf(3.0 * light.clamp(0., 1.)) / 9.;
-            let num_shades = m.shades.len();
-            // let num_shades = 3;
             let scaled = light.clamp(0., 1.);
-            let c2 = color_rounded_index(closest_transition(scaled, num_shades), num_shades);
-            let c1 = (c2.saturating_sub(1)).clamp(0, num_shades - 1);
-            let transition_width = 1. / num_shades as f32;
-            if transition_distance(scaled, num_shades) <= transition_width * (DITHER_RATIO + 0.5) {
-                if (x ^ y) % 2 == 0 {
-                    m.shades[c2]
-                } else {
-                    m.shades[c1]
-                }
-            } else {
-                m.shades[color_index(scaled, num_shades)]
-            }
+            let num_shades = m.shades.len();
+            m.shades[dither_mask(num_shades, x, y, scaled, DITHER_RATIO)]
         })
         .unwrap_or(CLEAR_COLOR)
+}
+
+pub fn dither_mask(whole_steps: usize, x: usize, y: usize, light: f32, ratio: f32) -> usize {
+    // light goes between 0 and 1
+    // ratio goes between 0 and 1
+    // returns index of material
+    let (c1, c2) = dither_or_solid_colors(whole_steps, light, ratio);
+    if (x ^ y) % 2 == 0 {
+        c2
+    } else {
+        c1
+    }
+}
+
+pub fn dither_or_solid(whole_steps: usize, light: f32, ratio: f32) -> bool {
+    let transition_width = 1. / whole_steps as f32;
+    let adjusted_ratio =
+        if whole_steps > 2 && (light <= transition_width || light >= 1.0 - transition_width) {
+            ratio / 2.0
+        } else {
+            ratio
+        };
+    transition_width * (ratio + 0.5);
+    transition_distance(light, whole_steps) < transition_width * (adjusted_ratio + 0.5)
+}
+
+pub fn dither_or_solid_colors(whole_steps: usize, light: f32, ratio: f32) -> (usize, usize) {
+    // light goes between 0 and 1
+    // ratio goes between 0 and 1
+    // returns index of material
+    let (c1, c2) = dither_mask_colors(whole_steps, light);
+    if dither_or_solid(whole_steps, light, ratio) {
+        (c2, c1)
+    } else {
+        (
+            color_index(light, whole_steps),
+            color_index(light, whole_steps),
+        )
+    }
+}
+
+pub fn dither_mask_colors(whole_steps: usize, light: f32) -> (usize, usize) {
+    // whole_steps: length of materials; range of output
+    // TODO which light scaling should we do?
+    // light goes between 0 and 1
+    let c2 = color_rounded_index(closest_transition(light, whole_steps), whole_steps);
+    let c1 = (c2.saturating_sub(1)).clamp(0, whole_steps - 1);
+    (c1, c2)
 }
 
 pub fn lit_color_old(value: f32, base_color: Color) -> Color {
@@ -183,5 +220,48 @@ pub fn lit_color_old(value: f32, base_color: Color) -> Color {
             7 => Color::Blue6,
             _ => Color::White,
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn complete_dark() {
+        assert_eq!(dither_or_solid_colors(3, 0.0, 0.5), (0, 0));
+    }
+
+    #[test]
+    fn complete_light() {
+        assert_eq!(dither_or_solid_colors(3, 1.0, 0.5), (2, 2));
+    }
+
+    #[test]
+    fn dither_regions_2() {
+        let lights = [0.0, 0.2, 0.3, 0.5, 0.7, 0.8, 1.0];
+        let ratio = 0.5;
+        let dither = lights.map(|light| dither_or_solid(2, light, ratio));
+        assert_eq!(dither, [false, false, true, true, true, false, false]);
+    }
+
+    #[test]
+    fn dither_region_2_middle() {
+        assert_eq!(dither_or_solid(2, 0.5, 0.5), true);
+    }
+
+    #[test]
+    fn dither_region_2_darkest() {
+        assert_eq!(dither_or_solid(2, 0.0, 0.5), false);
+    }
+
+    #[test]
+    fn complete_light_small_ratio() {
+        assert_eq!(dither_or_solid_colors(3, 1.0, 0.49), (2, 2));
+    }
+
+    #[test]
+    fn complete_light_4() {
+        assert_eq!(dither_or_solid_colors(4, 1.0, 0.5), (3, 3));
     }
 }
